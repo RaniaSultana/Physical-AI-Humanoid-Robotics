@@ -42,7 +42,7 @@ export default function Root({ children }: RootProps): JSX.Element {
       <AuthProvider>
         {children}
         <BrowserOnly fallback={null}>
-          <FloatingComponents />
+          {() => <FloatingComponents />}
         </BrowserOnly>
       </AuthProvider>
     </SSRContent>
