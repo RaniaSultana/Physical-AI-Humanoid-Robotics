@@ -26,15 +26,13 @@ const ChatBot = React.lazy(() => import('../components/ChatBot'));
 const HighlightAsk = React.lazy(() => import('../components/HighlightAsk'));
 const ReadingTracker = React.lazy(() => import('../components/ReadingTracker'));
 
-function AppContent() {
+function FloatingComponents() {
   return (
-    <AuthProvider>
-      <React.Suspense fallback={null}>
-        <ReadingTracker />
-        <ChatBot />
-        <HighlightAsk />
-      </React.Suspense>
-    </AuthProvider>
+    <React.Suspense fallback={null}>
+      <ReadingTracker />
+      <ChatBot />
+      <HighlightAsk />
+    </React.Suspense>
   );
 }
 
@@ -42,10 +40,10 @@ export default function Root({ children }: RootProps): JSX.Element {
   return (
     <SSRContent>
       <AuthProvider>
-        <BrowserOnly fallback={children}>
-          {() => <AppContent />}
-        </BrowserOnly>
         {children}
+        <BrowserOnly fallback={null}>
+          <FloatingComponents />
+        </BrowserOnly>
       </AuthProvider>
     </SSRContent>
   );
