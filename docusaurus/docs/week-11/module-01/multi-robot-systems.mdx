@@ -1,0 +1,352 @@
+---
+sidebar_position: 1
+title: Multi-Robot Systems
+description: Coordination, communication, and collective behavior in robot teams
+---
+
+# Multi-Robot Systems
+
+When multiple robots work together, they can achieve tasks impossible for any single robot. From warehouse fleets to search and rescue teams to construction swarms, multi-robot systems offer parallelism, robustness, and emergent capabilities. This chapter explores the principles of multi-robot coordination, communication, and collective intelligence.
+
+## Why Multi-Robot Systems?
+
+### Advantages of Robot Teams
+
+Multiple robots working together offer advantages beyond what a single robot can provide:
+
+| Advantage | Description | Example |
+|-----------|-------------|---------|
+| **Parallelism** | Multiple robots work simultaneously | Warehouse robots fulfilling many orders at once |
+| **Robustness** | System continues if one robot fails | Drone swarm continues mission after losing members |
+| **Spatial Distribution** | Cover large areas simultaneously | Search and rescue across a disaster zone |
+| **Specialization** | Different robots for different subtasks | Scouts + carriers + manipulators |
+| **Emergent Capability** | Collective behavior beyond individual ability | Swarm carrying loads too heavy for one |
+
+Consider a warehouse with 1,000 orders to fulfill. A single robot might take 10 hours. One hundred robots working in parallel could complete the task in minutes, with redundancy if some robots fail.
+
+### Multi-Robot vs. Single Robot Trade-offs
+
+Multi-robot systems aren't universally better; they introduce their own challenges:
+
+| Factor | Single Robot | Multi-Robot |
+|--------|--------------|-------------|
+| **Coordination complexity** | None | Significant |
+| **Communication needs** | None | Essential |
+| **Single point of failure** | Yes | No (distributed) |
+| **Scalability** | Limited by robot capability | Scales with fleet size |
+| **Debugging** | Straightforward | Complex emergent behaviors |
+| **Cost** | One expensive robot | Many cheaper robots |
+
+## System Architectures
+
+### Centralized Architecture
+
+A single central controller coordinates all robots:
+
+**Structure**: All robots communicate with and receive commands from a central node that has global knowledge.
+
+**Advantages**:
+- Optimal decisions with complete information
+- Simpler individual robot software
+- Easier to implement complex coordinated behaviors
+
+**Disadvantages**:
+- Single point of failure
+- Communication bottleneck
+- Doesn't scale beyond ~50 robots
+- Latency increases with team size
+
+Centralized architectures work well for small teams in controlled environments with reliable communication.
+
+### Decentralized Architecture
+
+Each robot makes decisions based on local information:
+
+**Structure**: Robots communicate only with nearby neighbors. No global coordinator.
+
+**Advantages**:
+- No single point of failure
+- Scales to thousands of robots
+- Works with unreliable communication
+- Robust to individual failures
+
+**Disadvantages**:
+- Globally suboptimal decisions
+- Harder to coordinate complex tasks
+- Emergent behaviors can be unpredictable
+
+Decentralized architectures excel for large swarms and outdoor environments with unreliable communication.
+
+### Hierarchical Architecture
+
+Leaders coordinate subgroups in a tree structure:
+
+**Structure**: Group leaders coordinate with higher-level leaders. Teams have local coordination.
+
+**Advantages**:
+- Better scalability than centralized
+- Some global coordination preserved
+- Natural task decomposition
+
+**Disadvantages**:
+- Leader failure affects subgroup
+- More complex than pure alternatives
+- Communication overhead at leader nodes
+
+### Market-Based Coordination
+
+Robots bid on tasks through auction mechanisms:
+
+**Structure**: Tasks are announced, robots submit bids based on their cost, best bidder wins.
+
+**Advantages**:
+- Self-organizing task allocation
+- Naturally balances workload
+- Flexible and adaptive
+
+**Disadvantages**:
+- Communication overhead for bidding
+- May not find globally optimal allocation
+- Requires clear task definitions
+
+:::tip Choosing an Architecture
+- **Small team (fewer than 10), reliable comm**: Centralized
+- **Large swarm (100+), unreliable comm**: Decentralized
+- **Medium team, structured tasks**: Hierarchical
+- **Dynamic task environment**: Market-based
+:::
+
+## Task Allocation
+
+### The Multi-Robot Task Allocation Problem
+
+MRTA assigns tasks to robots to optimize some objective (minimize time, maximize coverage, balance load):
+
+| Problem Class | Description | Example |
+|---------------|-------------|---------|
+| **Single-task robots, single-robot tasks** | 1:1 assignment | Package delivery |
+| **Single-task robots, multi-robot tasks** | Coalition formation | Heavy lifting |
+| **Multi-task robots, single-robot tasks** | Route planning | Patrol routes |
+| **Multi-task robots, multi-robot tasks** | Complex coordination | Construction |
+
+### Allocation Approaches
+
+**Greedy Allocation**: Assign each task to the best available robot. Fast but may not be optimal globally.
+
+**Auction-Based**: Robots bid on tasks based on their cost/capability. Winner takes the task. Good balance of quality and distributed decision-making.
+
+**Optimization-Based**: Formulate as integer program, solve for optimal assignment. Optimal but computationally expensive.
+
+**Learning-Based**: Train policies that allocate tasks based on state. Can capture complex patterns but requires training data.
+
+### Coalition Formation
+
+Some tasks require multiple robots working together:
+
+**Process**:
+1. Identify task requirements (capabilities needed)
+2. Find robot combinations that meet requirements
+3. Select coalition that minimizes cost/time
+4. Coordinate coalition members for execution
+
+For example, lifting a heavy object might require three robots with combined lifting capacity exceeding the object's weight, positioned to balance the load.
+
+## Swarm Robotics
+
+### Inspiration from Nature
+
+Swarm robotics takes inspiration from biological swarms:
+
+| Biological Swarm | Robotics Application |
+|------------------|---------------------|
+| Ant colonies | Foraging, path finding |
+| Bird flocks | Formation flight |
+| Fish schools | Collective navigation |
+| Bee hives | Task allocation |
+| Termite mounds | Collective construction |
+
+Key insight: Simple local rules produce complex global behavior without central control.
+
+### Reynolds Flocking Rules
+
+Craig Reynolds' flocking model uses three simple rules:
+
+**Separation**: Steer to avoid crowding local flockmates. Prevents collisions.
+
+**Alignment**: Steer toward the average heading of local flockmates. Creates coherent direction.
+
+**Cohesion**: Steer toward the average position of local flockmates. Keeps the flock together.
+
+Each robot only needs to know about its neighbors, yet the flock exhibits coordinated global motion.
+
+### Swarm Behaviors
+
+Common swarm behaviors and their applications:
+
+**Aggregation**: Gather at a location. Used for rendezvous, assembly points.
+
+**Dispersion**: Spread out to maximize coverage. Used for area surveillance, exploration.
+
+**Flocking**: Coordinated movement as a group. Used for formation flight, collective transport.
+
+**Foraging**: Search for and retrieve resources. Used for search and rescue, cleaning.
+
+**Collective Transport**: Multiple robots move a single object. Used for moving heavy or large items.
+
+**Pattern Formation**: Arrange into specified shapes. Used for displays, self-assembly.
+
+### Emergent Behavior
+
+Swarm behaviors are **emergent**: they arise from local interactions, not explicit programming of the global behavior.
+
+| Property | Description |
+|----------|-------------|
+| **Self-organization** | Structure arises without central control |
+| **Scalability** | Works from 10 to 10,000 robots |
+| **Robustness** | Tolerates individual failures |
+| **Adaptability** | Responds to environmental changes |
+| **Unpredictability** | Exact behavior hard to predict |
+
+:::note The Challenge of Emergence
+Emergent behaviors are powerful but can be hard to design and verify. Small changes in local rules can produce dramatically different global behavior. Testing requires large-scale simulation.
+:::
+
+## Communication
+
+### Communication Requirements
+
+Multi-robot systems need communication for:
+
+- **State sharing**: Where are other robots?
+- **Coordination**: Who does what?
+- **Negotiation**: Bidding, conflict resolution
+- **Environment information**: Sharing sensor data
+
+### Communication Patterns
+
+| Pattern | Description | Use Case |
+|---------|-------------|----------|
+| **Broadcast** | Send to all robots | Global announcements |
+| **Multicast** | Send to subset | Team-specific messages |
+| **Unicast** | Send to one robot | Direct coordination |
+| **Gossip** | Random neighbor exchange | Distributed consensus |
+
+### Connectivity and Networks
+
+Multi-robot communication forms a network:
+
+**Connectivity Graph**: Nodes are robots, edges are communication links (typically distance-based).
+
+**Connected Network**: Any robot can reach any other (possibly through intermediaries).
+
+**Network Topology**: Affects performance, robustness, and latency.
+
+**Dynamic Networks**: Links form and break as robots move.
+
+Maintaining connectivity is often a constraint in multi-robot planning. If the network partitions, coordination fails.
+
+### Consensus Algorithms
+
+Robots often need to agree on values (e.g., average position, shared estimate):
+
+**Average Consensus**: Each robot iteratively averages its value with neighbors. Eventually all converge to the global average.
+
+**Leader Election**: Distributed protocol to select one leader from peers.
+
+**Distributed Optimization**: Collectively solve optimization problems without central coordinator.
+
+Consensus enables distributed decision-making where all robots eventually agree despite having only local information.
+
+## Planning and Coordination
+
+### Multi-Robot Path Planning
+
+Finding collision-free paths for multiple robots:
+
+**Coupled Planning**: Plan for all robots simultaneously. Optimal but exponentially complex.
+
+**Decoupled Planning**: Plan each robot individually, then resolve conflicts. Faster but may not find solutions that exist.
+
+**Priority Planning**: Robots plan in sequence, respecting higher-priority robot paths. Simple and often effective.
+
+**CBS (Conflict-Based Search)**: Iteratively find conflicts and add constraints until conflict-free solution found. Good balance of optimality and efficiency.
+
+### Formation Control
+
+Robots maintaining a specified geometric pattern:
+
+**Leader-Follower**: One robot leads, others maintain relative position to leader.
+
+**Virtual Structure**: Formation treated as rigid body, individual robots track points on the structure.
+
+**Behavior-Based**: Local rules (like flocking) with additional formation constraints.
+
+**Graph-Based**: Specify desired inter-robot distances, use control to achieve them.
+
+Formations are useful for collective transport, sensor arrays, and maintaining communication.
+
+### Coordination Mechanisms
+
+Beyond communication, robots need coordination mechanisms:
+
+**Implicit Coordination**: Observe other robots' actions and infer intent. No explicit communication needed.
+
+**Explicit Coordination**: Share plans and negotiate. More reliable but requires communication.
+
+**Stigmergy**: Coordinate through environment (like ants leaving pheromones). Robust to communication failure.
+
+## Applications
+
+### Warehouse Robotics
+
+Large fleets of mobile robots in fulfillment centers:
+
+- **Task**: Retrieve items, bring to packing stations
+- **Scale**: Hundreds to thousands of robots
+- **Coordination**: Centralized traffic management, task assignment
+- **Challenges**: Congestion, efficiency, scalability
+
+Companies like Amazon (Kiva/Amazon Robotics) deploy thousands of robots per warehouse.
+
+### Search and Rescue
+
+Teams searching disaster areas:
+
+- **Task**: Find survivors, map environment, report
+- **Scale**: Tens to hundreds of robots
+- **Coordination**: Distributed, unreliable communication
+- **Challenges**: Unknown environment, limited communication, heterogeneous team
+
+### Agricultural Robotics
+
+Robot teams for farming tasks:
+
+- **Task**: Planting, weeding, harvesting, monitoring
+- **Scale**: Tens of robots per field
+- **Coordination**: Coverage planning, weather adaptation
+- **Challenges**: Outdoor conditions, large areas, crop variation
+
+### Construction
+
+Collaborative building and assembly:
+
+- **Task**: Transport materials, assemble structures
+- **Scale**: Tens of robots
+- **Coordination**: Task sequencing, precise placement
+- **Challenges**: Heavy loads, precision requirements, dynamic plans
+
+## Key Takeaways
+
+- **Multi-robot systems** provide parallelism, robustness, and capabilities beyond single robots
+- **Architecture choice** (centralized, decentralized, hierarchical) depends on scale and communication reliability
+- **Task allocation** assigns work to robots; approaches range from greedy to optimal
+- **Swarm robotics** uses simple local rules to achieve complex emergent behaviors
+- **Communication** enables coordination but introduces overhead and failure modes
+- **Path planning** for multiple robots requires handling conflicts and coordination
+- **Applications** span warehouses, search and rescue, agriculture, and construction
+
+Multi-robot systems represent a different paradigm from single-robot development. The focus shifts from individual capability to collective behavior, from centralized control to distributed intelligence, and from single-point reliability to system-level robustness.
+
+---
+
+**Next Chapter**: [Ethics and Safety in Robotics](./ethics-safety)

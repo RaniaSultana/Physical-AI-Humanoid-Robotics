@@ -1,0 +1,157 @@
+/* Translation Toggle Container */
+.container {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: var(--ifm-color-gray-50);
+  border-radius: 8px;
+  border: 1px solid var(--ifm-color-gray-200);
+}
+
+.toggleWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ifm-color-gray-700);
+}
+
+.toggle {
+  display: flex;
+  background: var(--ifm-color-gray-200);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.toggleButton {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--ifm-color-gray-600);
+  font-weight: 500;
+}
+
+.toggleButton:hover:not(:disabled) {
+  color: var(--ifm-color-gray-900);
+}
+
+.toggleButton.active {
+  background: var(--ifm-background-color);
+  color: var(--ifm-color-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.toggleButton.urdu {
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
+}
+
+.toggleButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.translating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Progress */
+.progressContainer {
+  margin-top: 12px;
+}
+
+.progressBar {
+  height: 4px;
+  background: var(--ifm-color-gray-200);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--ifm-color-primary);
+  transition: width 0.3s ease;
+}
+
+.progressText {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--ifm-color-gray-600);
+}
+
+/* Error */
+.error {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--ifm-color-danger-lightest);
+  color: var(--ifm-color-danger);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+/* Hint */
+.hint {
+  margin: 8px 0 0 0;
+  font-size: 0.8rem;
+  color: var(--ifm-color-gray-500);
+}
+
+/* Translated title */
+.translatedTitle {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--ifm-background-color);
+  border-radius: 6px;
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
+  font-size: 1.2rem;
+  line-height: 1.8;
+  text-align: right;
+}
+
+/* Dark mode */
+[data-theme='dark'] .container {
+  background: var(--ifm-color-gray-800);
+  border-color: var(--ifm-color-gray-700);
+}
+
+[data-theme='dark'] .toggle {
+  background: var(--ifm-color-gray-700);
+}
+
+[data-theme='dark'] .toggleButton {
+  color: var(--ifm-color-gray-400);
+}
+
+[data-theme='dark'] .toggleButton:hover:not(:disabled) {
+  color: var(--ifm-color-gray-100);
+}
+
+[data-theme='dark'] .toggleButton.active {
+  background: var(--ifm-color-gray-900);
+}
+
+[data-theme='dark'] .translatedTitle {
+  background: var(--ifm-color-gray-900);
+}

@@ -1,0 +1,245 @@
+/**
+ * MarkdownEditor Styles (T108)
+ */
+
+.editorContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 500px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--ifm-background-surface-color);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.toolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.chapterTitle {
+  font-weight: 600;
+  color: var(--ifm-color-content);
+}
+
+.stats {
+  font-size: 0.875rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+.toolbarRight {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toolbarButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  background: var(--ifm-background-color);
+  color: var(--ifm-color-content);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.toolbarButton:hover {
+  background: var(--ifm-color-emphasis-200);
+}
+
+.toolbarButton.active {
+  background: var(--ifm-color-primary);
+  color: white;
+  border-color: var(--ifm-color-primary);
+}
+
+.saveButton {
+  background: var(--ifm-color-primary);
+  color: white;
+  border-color: var(--ifm-color-primary);
+}
+
+.saveButton:hover {
+  background: var(--ifm-color-primary-dark);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.editorBody {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.editorBody.split .editorPane {
+  width: 50%;
+  border-right: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.editorPane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.textarea {
+  flex: 1;
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  resize: none;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  background: var(--ifm-background-color);
+  color: var(--ifm-color-content);
+}
+
+.textarea:focus {
+  outline: none;
+}
+
+.textarea::placeholder {
+  color: var(--ifm-color-content-secondary);
+}
+
+.previewPane {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--ifm-background-color);
+}
+
+.previewHeader {
+  padding: 0.5rem 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--ifm-color-content-secondary);
+}
+
+.previewContent {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  line-height: 1.7;
+}
+
+.previewContent h1,
+.previewContent h2,
+.previewContent h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.previewContent h1 {
+  font-size: 1.75rem;
+}
+
+.previewContent h2 {
+  font-size: 1.5rem;
+}
+
+.previewContent h3 {
+  font-size: 1.25rem;
+}
+
+.previewContent code {
+  background: var(--ifm-color-emphasis-200);
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  font-size: 0.875em;
+}
+
+.previewContent pre {
+  background: var(--ifm-color-emphasis-100);
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.previewContent pre code {
+  background: none;
+  padding: 0;
+}
+
+.previewContent blockquote {
+  border-left: 4px solid var(--ifm-color-primary);
+  margin: 1rem 0;
+  padding-left: 1rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+.previewContent ul {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.previewContent li {
+  margin: 0.25rem 0;
+}
+
+.previewContent a {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.previewContent a:hover {
+  text-decoration: underline;
+}
+
+.statusBar {
+  padding: 0.5rem 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border-top: 1px solid var(--ifm-color-emphasis-300);
+  font-size: 0.75rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .editorBody.split {
+    flex-direction: column;
+  }
+
+  .editorBody.split .editorPane {
+    width: 100%;
+    height: 50%;
+    border-right: none;
+    border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  }
+
+  .previewPane {
+    width: 100%;
+    height: 50%;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .toolbarLeft,
+  .toolbarRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

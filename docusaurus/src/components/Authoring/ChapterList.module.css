@@ -1,0 +1,261 @@
+/**
+ * ChapterList Component Styles (T109)
+ */
+
+.container {
+  width: 100%;
+}
+
+/* Loading State */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--ifm-color-emphasis-200);
+  border-top-color: var(--ifm-color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Empty State */
+.empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.empty h3 {
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--ifm-heading-color);
+}
+
+.empty p {
+  margin: 0;
+}
+
+/* Week Group */
+.weekGroup {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.weekHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background: var(--ifm-color-emphasis-100);
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: left;
+  color: var(--ifm-heading-color);
+  transition: background 0.2s ease;
+}
+
+.weekHeader:hover {
+  background: var(--ifm-color-emphasis-200);
+}
+
+.weekTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.expandIcon {
+  font-size: 0.75rem;
+  color: var(--ifm-color-emphasis-600);
+  transition: transform 0.2s ease;
+}
+
+.weekStats {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.weekContent {
+  padding: 0.5rem 0;
+}
+
+/* Module Group */
+.moduleGroup {
+  padding: 0.5rem 1.25rem;
+}
+
+.moduleHeader {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-600);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.75rem;
+  padding-left: 0.5rem;
+}
+
+/* Chapter List */
+.chapterList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Chapter Item */
+.chapterItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: var(--ifm-background-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chapterItem:hover {
+  border-color: var(--ifm-color-primary-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.chapterInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.chapterTitle {
+  font-weight: 600;
+  color: var(--ifm-heading-color);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chapterNumber {
+  color: var(--ifm-color-primary);
+  font-weight: 700;
+}
+
+.chapterMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--ifm-color-emphasis-600);
+}
+
+/* Status Badge */
+.status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 12px;
+}
+
+.published {
+  background: var(--ifm-color-success-contrast-background);
+  color: var(--ifm-color-success-darkest);
+}
+
+.draft {
+  background: var(--ifm-color-warning-contrast-background);
+  color: var(--ifm-color-warning-darkest);
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Chapter Actions */
+.chapterActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 1rem;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  background: var(--ifm-color-emphasis-100);
+  border-color: var(--ifm-color-emphasis-300);
+}
+
+.publishButton:hover {
+  background: var(--ifm-color-success-contrast-background);
+  border-color: var(--ifm-color-success);
+}
+
+.unpublishButton:hover {
+  background: var(--ifm-color-warning-contrast-background);
+  border-color: var(--ifm-color-warning);
+}
+
+.deleteButton:hover {
+  background: var(--ifm-color-danger-contrast-background);
+  border-color: var(--ifm-color-danger);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .chapterItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .chapterActions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .chapterMeta {
+    gap: 0.5rem;
+  }
+}

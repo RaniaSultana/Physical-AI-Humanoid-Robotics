@@ -1,0 +1,264 @@
+---
+sidebar_position: 2
+title: Sensor Fusion and Kalman Filtering
+description: Combining multiple sensors for robust state estimation
+---
+
+# Sensor Fusion and Kalman Filtering
+
+Every sensor has limitations. GPS is accurate but updates slowly and fails indoors. IMUs respond quickly but drift over time. Wheel encoders are precise but accumulate errors and miss wheel slip. No single sensor can provide complete, reliable information about a robot's state.
+
+**Sensor fusion** is the art and science of combining measurements from multiple sensors to produce estimates better than any sensor alone. This chapter explores the fundamental techniques, culminating in the famous Kalman filter—one of the most important algorithms in robotics and engineering.
+
+## Why Sensor Fusion?
+
+Consider the sensors available to a typical mobile robot:
+
+| Sensor | Strengths | Weaknesses |
+|--------|-----------|------------|
+| **GPS** | Absolute global position | Slow updates (1-10 Hz), no indoor coverage, 2-5m accuracy |
+| **IMU** | Fast (100+ Hz), smooth | Drifts over time, no absolute reference |
+| **Wheel Encoders** | Very precise short-term | Accumulated errors, affected by wheel slip |
+| **LiDAR** | Accurate distance measurement | Computationally expensive, limited in featureless areas |
+| **Camera** | Rich information | Lighting dependent, computationally intensive |
+
+:::tip The Golden Rule of Sensor Fusion
+Combine sensors that fail in different ways. When one sensor provides incorrect data, others can compensate. The goal is complementary failure modes, not redundancy of identical sensors.
+:::
+
+## Basic Fusion Approaches
+
+### Simple Averaging
+
+The most basic approach combines measurements using a simple average:
+
+**fused_estimate = (sensor1 + sensor2) / 2**
+
+This works when sensors have similar accuracy but doesn't account for the fact that some sensors may be more reliable than others.
+
+### Weighted Average
+
+A better approach assigns weights based on confidence in each sensor:
+
+**fused_estimate = w₁ × sensor1 + w₂ × sensor2**
+
+Where w₁ + w₂ = 1, and higher weights go to more trusted sensors.
+
+### Variance-Weighted Fusion
+
+The optimal approach (for independent Gaussian measurements) weights each sensor inversely by its variance (uncertainty squared):
+
+**weight_i = 1 / variance_i**
+
+Sensors with lower variance (more certainty) receive higher weights. This approach has a remarkable property: the fused estimate is more accurate than any individual sensor.
+
+**Fused variance = 1 / (1/variance_1 + 1/variance_2 + ...)**
+
+The fused variance is always smaller than any individual sensor's variance—you literally get better accuracy by combining imperfect sensors.
+
+## The Kalman Filter
+
+The **Kalman filter** is the gold standard for sensor fusion. Developed by Rudolf Kalman in 1960, it's been used in nearly every navigation system since, from the Apollo spacecraft to your smartphone's GPS.
+
+### Key Concepts
+
+The Kalman filter maintains two pieces of information:
+
+1. **State estimate (x̂)**: Our best guess of what we're trying to measure (position, velocity, orientation, etc.)
+2. **Error covariance (P)**: Our uncertainty about the estimate—how much we trust it
+
+The filter operates in two alternating steps:
+
+1. **Predict**: Use a model of how the system evolves to project the estimate forward in time
+2. **Update**: Incorporate a new measurement to improve the estimate
+
+### The Predict Step
+
+During prediction, we use our knowledge of how the system behaves to forecast the next state. For a robot moving at constant velocity:
+
+**predicted_position = current_position + velocity × time_step**
+
+But prediction always increases uncertainty. We're extrapolating, and our model isn't perfect. Things might not go exactly as expected. The error covariance grows:
+
+**predicted_uncertainty = current_uncertainty + process_noise**
+
+### The Update Step
+
+When a measurement arrives, we combine it with our prediction. The key is the **Kalman gain (K)**, which determines how much to trust the measurement versus our prediction:
+
+**K = predicted_uncertainty / (predicted_uncertainty + measurement_noise)**
+
+- If measurement noise is low (reliable sensor): K is large, we trust the measurement
+- If measurement noise is high (unreliable sensor): K is small, we trust our prediction
+
+The updated estimate becomes:
+
+**updated_estimate = predicted_estimate + K × (measurement - predicted_estimate)**
+
+And the uncertainty decreases:
+
+**updated_uncertainty = (1 - K) × predicted_uncertainty**
+
+### Why the Kalman Filter Works
+
+The Kalman filter's genius is in automatically balancing two sources of information:
+
+1. **Our prediction** based on the system model (physics, dynamics)
+2. **The measurement** from sensors
+
+When our prediction is uncertain but the measurement is reliable, the filter trusts the measurement. When our prediction is confident but the measurement is noisy, the filter mostly ignores the measurement. This automatic adaptation makes it robust across varying conditions.
+
+:::note Optimal Estimation
+For linear systems with Gaussian noise, the Kalman filter is provably optimal—no other algorithm can produce better estimates given the same information. This mathematical guarantee explains its widespread adoption.
+:::
+
+## Multi-Dimensional Kalman Filter
+
+Real robotics problems involve multiple variables. A mobile robot's state might include:
+- Position (x, y)
+- Velocity (vx, vy)
+- Heading (θ)
+- Angular velocity (ω)
+
+The Kalman filter extends naturally to multiple dimensions using matrix algebra:
+
+**State transition**: x[k+1] = F × x[k] + B × u[k]
+**Measurement**: z[k] = H × x[k]
+
+Where:
+- **F** is the state transition matrix (how the state evolves)
+- **B** is the control input matrix (how controls affect state)
+- **H** is the measurement matrix (how state maps to measurements)
+
+### Position-Velocity Estimation
+
+A common and powerful application: estimating both position and velocity from position-only measurements.
+
+Even if your sensor only measures position (like GPS), the Kalman filter can estimate velocity by tracking how position changes over time. The filter "learns" the velocity from the pattern of position measurements.
+
+This works because the filter's model knows that position and velocity are related:
+
+**position[k+1] = position[k] + velocity[k] × dt**
+
+By encoding this relationship, the filter extracts velocity information from position data.
+
+## Extended Kalman Filter (EKF)
+
+The standard Kalman filter assumes linear relationships, but robotics often involves nonlinear systems:
+
+- Rotation (angles wrap around)
+- Range-bearing measurements (distance and angle, not x-y)
+- Vehicle dynamics (turning radius depends on speed and steering angle)
+
+The **Extended Kalman Filter** handles nonlinearity by linearizing around the current estimate. Instead of using fixed matrices F and H, the EKF computes Jacobians (matrices of partial derivatives) at each timestep.
+
+**Jacobians** tell us how small changes in the state affect predictions and measurements. By continuously recomputing these linear approximations, the EKF tracks nonlinear systems effectively.
+
+### When EKF Works Well
+
+The EKF performs well when:
+- Nonlinearities are mild
+- The estimate is close to the true state
+- The system is well-modeled
+
+### When EKF Struggles
+
+The EKF can fail when:
+- Nonlinearities are severe
+- Initial estimate is far from truth
+- The linearization point is poor
+
+## Unscented Kalman Filter (UKF)
+
+For highly nonlinear systems, the **Unscented Kalman Filter** often outperforms the EKF. Instead of linearizing, it uses carefully chosen "sigma points" to capture how uncertainty transforms through nonlinear functions.
+
+### The Unscented Transform
+
+The UKF selects a small set of points (sigma points) that capture the mean and covariance of the distribution. These points are passed through the nonlinear function, and the results are used to estimate the transformed mean and covariance.
+
+**Advantages over EKF:**
+- No Jacobian calculations required
+- Better handles strong nonlinearities
+- Often more stable numerically
+- Can be more accurate for the same computational cost
+
+## Practical Sensor Fusion Example: GPS + IMU
+
+The combination of GPS and IMU is ubiquitous in robotics and navigation:
+
+**GPS characteristics:**
+- Accurate absolute position
+- Slow update rate (typically 1-10 Hz)
+- Can have gaps (tunnels, urban canyons, indoors)
+- Subject to multipath errors and ionospheric delays
+
+**IMU characteristics:**
+- Very fast update rate (100-1000 Hz)
+- Provides acceleration and angular velocity
+- Drifts over time due to integration errors
+- Works everywhere (no signal required)
+
+### How Fusion Helps
+
+**Between GPS updates**: The IMU provides smooth, high-rate position updates through integration. Even 0.1 seconds between GPS readings involves significant robot motion that the IMU captures.
+
+**Correcting IMU drift**: Each GPS update corrects accumulated IMU drift, resetting the integration error.
+
+**Estimating IMU bias**: Over time, the filter can estimate the constant bias in IMU readings by comparing predicted and measured positions. Correcting for bias dramatically improves long-term accuracy.
+
+**Handling GPS outages**: If GPS is temporarily unavailable, the IMU continues providing position updates (with growing uncertainty) until GPS returns.
+
+## Particle Filters
+
+For highly nonlinear or non-Gaussian problems, **particle filters** offer an alternative to Kalman variants. Instead of tracking a single estimate with uncertainty, particle filters maintain many possible states ("particles"), each representing a hypothesis about the true state.
+
+### How Particle Filters Work
+
+1. **Initialize**: Create many particles distributed according to initial uncertainty
+2. **Predict**: Move each particle according to the system model (with added noise)
+3. **Update**: Weight particles by how well they match the measurement
+4. **Resample**: Replace low-weight particles with copies of high-weight ones
+
+Over time, particles cluster around the true state as unlikely hypotheses are eliminated.
+
+### When to Use Particle Filters
+
+Particle filters excel at:
+- Multi-modal distributions (multiple possible states)
+- Highly nonlinear systems
+- Non-Gaussian noise
+- Global localization (finding position from scratch)
+
+They're computationally expensive but can handle problems that defeat Kalman filters.
+
+## Key Takeaways
+
+1. **Sensor fusion improves accuracy**: Combining sensors produces estimates better than any individual sensor.
+
+2. **Weight by uncertainty**: More reliable sensors should contribute more to the fused estimate.
+
+3. **The Kalman filter is fundamental**: Its predict-update cycle forms the basis of most sensor fusion systems.
+
+4. **Kalman gain balances sources**: High gain trusts measurements; low gain trusts predictions.
+
+5. **EKF extends to nonlinear systems**: Linearization via Jacobians handles mild nonlinearities.
+
+6. **UKF handles strong nonlinearities**: Sigma points capture uncertainty better than linearization.
+
+7. **GPS+IMU is a powerful combination**: Fast IMU updates plus slow GPS corrections is nearly universal in mobile robotics.
+
+:::note Industry Standard
+The Kalman filter and its variants underpin navigation systems in:
+- Smartphones (GPS/IMU fusion)
+- Aircraft autopilots
+- Self-driving cars
+- Spacecraft guidance
+- Marine vessels
+- Industrial robots
+
+If something moves and needs to know where it is, it's probably using a Kalman filter.
+:::
+
+---
+
+**Next Chapter**: [Motor Control Fundamentals](/week-03/module-01/motor-control-basics) — We transition from sensing to acting, exploring how robots convert electrical signals into precise mechanical motion.

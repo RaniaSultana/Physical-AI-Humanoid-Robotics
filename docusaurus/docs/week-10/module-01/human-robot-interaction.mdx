@@ -1,0 +1,337 @@
+---
+sidebar_position: 2
+title: Human-Robot Interaction
+description: Designing safe and effective interactions between humans and robots
+---
+
+# Human-Robot Interaction
+
+As robots increasingly share spaces and tasks with humans, the quality of human-robot interaction (HRI) becomes critical. Good HRI design enables robots to work effectively alongside people, communicate naturally, and ensure safety at all times. This chapter explores the principles, modalities, and technologies for creating effective human-robot interaction.
+
+## Foundations of HRI
+
+### Types of Human-Robot Interaction
+
+Human-robot interaction varies widely based on proximity and purpose:
+
+| Interaction Type | Proximity | Communication | Examples |
+|-----------------|-----------|---------------|----------|
+| **Remote** | Different locations | Teleoperation, video | Surgical robots, space exploration |
+| **Proximate** | Same space, no contact | Voice, gesture, gaze | Service robots, guides |
+| **Physical** | Direct contact | Touch, force feedback | Assistive robots, cobots |
+
+**Remote interaction** prioritizes communication fidelity and situational awareness. The operator needs to understand the robot's environment through sensors alone.
+
+**Proximate interaction** focuses on intuitive communication. The robot must understand human intentions and convey its own, all while maintaining safe distances.
+
+**Physical interaction** demands the highest safety standards. When humans and robots touch, forces must be carefully controlled to prevent injury.
+
+### Roles in Human-Robot Collaboration
+
+The robot can take different roles relative to the human:
+
+**Tool**: Human maintains direct control, robot amplifies human capability (surgical robot, teleoperated arm).
+
+**Assistant**: Robot helps the human with tasks, taking direction but also offering suggestions (fetch robot, assembly helper).
+
+**Collaborator**: Human and robot work as partners with complementary capabilities (human plans, robot executes heavy lifting).
+
+**Autonomous Agent**: Robot works independently with occasional human supervision (warehouse robot, delivery robot).
+
+The appropriate role depends on the task, environment, and human preferences. Many systems can switch between roles dynamically.
+
+## HRI Design Principles
+
+### Safety First
+
+Safety is the foundation of all HRI design. Robots that can injure people will not be accepted regardless of their capabilities.
+
+| Safety Aspect | Implementation |
+|--------------|----------------|
+| **Force limiting** | Restrict maximum forces in contact |
+| **Emergency stops** | Accessible and reliable halt mechanism |
+| **Predictable motion** | No sudden, unexpected movements |
+| **Fail-safe behaviors** | Safe actions when systems fail |
+| **Speed limiting** | Reduce speed near humans |
+
+Safety must be designed in from the beginning, not added as an afterthought.
+
+### Transparency
+
+Humans need to understand what the robot is doing and why:
+
+**State Indication**: Display current robot state (idle, active, error).
+
+**Intention Signaling**: Show what the robot is about to do before it acts.
+
+**Explanation**: Provide reasons for decisions when asked.
+
+**Confidence Display**: Indicate uncertainty in perceptions or actions.
+
+Transparency builds trust. When humans understand robot behavior, they can work with robots more effectively and predict their actions.
+
+### Predictability
+
+Humans should be able to anticipate robot behavior:
+
+**Consistent Motion**: Similar actions look similar each time.
+
+**Social Norms**: Follow expected conventions (wait at doors, give way).
+
+**Legible Motion**: Move in ways that reveal intent, not just efficiency.
+
+**Clear Boundaries**: Humans understand what robot will and won't do.
+
+:::tip Legibility vs. Efficiency
+A robot might reach its goal faster by moving straight toward it. But a curved path that clearly shows where it's headed might be preferred because humans can predict the destination earlier and avoid collision.
+:::
+
+### Adaptability
+
+Good HRI adapts to different users and contexts:
+
+**Personalization**: Learn individual user preferences over time.
+
+**Context Awareness**: Adjust behavior based on situation (quiet in libraries, louder in factories).
+
+**Accessibility**: Accommodate users with different abilities.
+
+**Cultural Sensitivity**: Respect cultural norms about personal space, eye contact, etc.
+
+## Safety in Physical HRI
+
+### ISO 15066: Collaborative Robot Safety
+
+ISO 15066 specifies requirements for safe physical human-robot interaction:
+
+**Speed and Separation Monitoring**: Robot reduces speed as humans approach. If distance falls below safety threshold, robot stops.
+
+**Power and Force Limiting**: Contact forces are limited to prevent injury. Limits depend on body part contacted.
+
+**Safety-Rated Monitored Stop**: Robot can be stopped by entering its workspace. Monitors verify the stop.
+
+**Hand Guiding**: Human can directly move the robot, which has safety-rated stop if released.
+
+### Force and Power Limits
+
+ISO 15066 specifies maximum permissible contact forces for different body parts:
+
+| Body Region | Max Transient Force (N) | Max Quasi-Static Force (N) |
+|-------------|------------------------|---------------------------|
+| Skull | 130 | 65 |
+| Face | 65 | 45 |
+| Chest | 280 | 140 |
+| Hand/Finger | 280 | 140 |
+| Back | 420 | 210 |
+
+Transient forces (brief impacts) can be higher than quasi-static forces (sustained contact) because they have less time to cause damage.
+
+### Compliant Control
+
+Robots interacting with humans benefit from compliant (soft) control:
+
+**Impedance Control**: Robot behaves like a spring-damper system. External forces cause the robot to deflect rather than resist.
+
+**Variable Impedance**: Stiffness changes based on task phase. Stiff when precision needed, soft when near humans.
+
+**Force Sensing**: Detect unexpected contacts and respond appropriately.
+
+Low impedance (soft behavior) is inherently safer because contact forces are limited by the robot's compliance rather than requiring fast sensing and reaction.
+
+## Communication Modalities
+
+### Speech and Language
+
+Natural language is the most intuitive communication method for humans:
+
+**Speech Recognition**: Convert spoken words to text. Challenges include noise, accents, and technical vocabulary.
+
+**Intent Understanding**: Determine what the human wants from their utterance. "Get me something to drink" requires reasoning about context.
+
+**Dialogue Management**: Handle multi-turn conversations, clarifications, and context.
+
+**Speech Synthesis**: Generate natural-sounding speech responses with appropriate timing and emotion.
+
+| Challenge | Description | Approach |
+|-----------|-------------|----------|
+| Noise | Industrial environments are loud | Directional mics, noise cancellation |
+| Ambiguity | "Put that over there" is vague | Clarification questions |
+| Context | Commands depend on situation | Maintain conversation history |
+| Errors | Recognition isn't perfect | Confirmation, graceful recovery |
+
+### Gesture Recognition
+
+Gestures provide a natural non-verbal communication channel:
+
+**Static Gestures**: Hand configurations like pointing, thumbs up, stop (open palm).
+
+**Dynamic Gestures**: Motions like waving, beckoning, sweeping.
+
+**Deictic Gestures**: Pointing to indicate objects or locations.
+
+**Iconic Gestures**: Mimicking actions (stirring, cutting).
+
+Gesture recognition typically uses camera-based hand tracking, either with depth sensors or learned from RGB images.
+
+### Gaze and Attention
+
+Where humans and robots look communicates attention and intention:
+
+**Human Gaze Tracking**: Where is the human looking? This reveals focus of attention.
+
+**Robot Gaze Direction**: The robot can direct attention by looking at objects or the human.
+
+**Joint Attention**: Human and robot looking at the same thing, aware of shared focus.
+
+**Turn-Taking**: Gaze helps coordinate when to speak in conversation.
+
+:::note The Importance of Eyes
+Even simple robots benefit from gaze behavior. Eye-like features that track the human create a sense of engagement and make the robot's attention clear.
+:::
+
+### Multi-Modal Communication
+
+The most effective HRI combines multiple modalities:
+
+**Speech + Gesture**: "Put this (holds object) over there (points)."
+
+**Gaze + Speech**: Robot looks at object while referring to it.
+
+**Touch + Visual**: Physical guidance combined with screen displays.
+
+Multi-modal communication is more robust because each modality can compensate for limitations in others.
+
+## Social Robotics
+
+### Social Cues and Behavior
+
+Robots that operate among humans benefit from following social conventions:
+
+**Gaze Behavior**:
+- Look at speaker during conversation
+- Look at referenced objects
+- Occasional gaze aversion (constant staring is uncomfortable)
+- Follow human gaze (joint attention)
+
+**Proxemics** (Personal Space):
+- Intimate zone (0-45 cm): Only for physical assistance
+- Personal zone (45-120 cm): Normal conversation
+- Social zone (120-360 cm): Formal interaction
+- Public zone (360+ cm): Robot as environmental feature
+
+**Timing and Turn-Taking**:
+- Appropriate pauses in conversation
+- Wait for speaker to finish
+- Signal when robot is processing
+- Respond within expected delay
+
+### Anthropomorphism
+
+The degree to which a robot resembles a human affects interaction:
+
+**Highly Anthropomorphic**: Human-like appearance and behavior. Can leverage human social intuitions but risks uncanny valley.
+
+**Zoomorphic**: Animal-like appearance. Often more comfortable than nearly-human.
+
+**Machine-Like**: Clearly a machine. No expectation of social behavior, but may be harder to interact with naturally.
+
+**The Uncanny Valley**: Robots that are almost but not quite human can be disturbing. Either be clearly robotic or extremely lifelike.
+
+### Trust and Acceptance
+
+Building trust with users is essential for HRI adoption:
+
+| Trust Factor | Robot Behaviors |
+|--------------|-----------------|
+| **Competence** | Perform tasks reliably |
+| **Predictability** | Behave consistently |
+| **Transparency** | Explain actions |
+| **Benevolence** | Act in human's interest |
+| **Integrity** | Keep promises, admit limitations |
+
+Trust takes time to build but can be lost quickly. A single safety incident or major failure can destroy trust built over many positive interactions.
+
+## Teleoperation and Shared Control
+
+### Teleoperation Interfaces
+
+When humans control robots remotely:
+
+**Direct Teleoperation**: One-to-one mapping of human motion to robot motion. Intuitive but demanding.
+
+**Supervisory Control**: Human specifies goals, robot executes. Less burden but requires good autonomy.
+
+**Shared Control**: Human and robot jointly control, with robot assisting or overriding for safety.
+
+### Operator Interfaces
+
+Effective teleoperation requires good information display:
+
+**Visual Feedback**: Camera views, augmented reality overlays, 3D visualization.
+
+**Force Feedback**: Haptic devices that let operator "feel" robot contact.
+
+**Spatial Audio**: 3D sound helps situational awareness.
+
+**Status Displays**: Battery, joint limits, warnings.
+
+### Adjustable Autonomy
+
+The degree of autonomy can change dynamically:
+
+**Full Manual**: Human controls every motion.
+
+**Assisted Manual**: Robot helps with stabilization, obstacle avoidance.
+
+**Shared Control**: Robot handles low-level details, human guides high-level.
+
+**Supervised Autonomy**: Robot acts independently, human intervenes when needed.
+
+**Full Autonomy**: Robot acts without human input.
+
+The best level of autonomy depends on task complexity, human workload, and environment predictability.
+
+## HRI Evaluation
+
+### Measuring Interaction Quality
+
+HRI effectiveness can be evaluated through:
+
+**Task Performance**: Speed, accuracy, success rate of collaborative tasks.
+
+**User Experience**: Satisfaction, comfort, perceived ease of use.
+
+**Safety Metrics**: Near misses, contact forces, emergency stops.
+
+**Communication Quality**: Mutual understanding, error rate, repair success.
+
+**Trust Measures**: Surveys, observed behavior (willingness to rely on robot).
+
+### User Studies
+
+Rigorous HRI research requires careful user studies:
+
+**Within-Subject**: Same users try multiple conditions. Controls for individual differences.
+
+**Between-Subject**: Different users per condition. Avoids learning effects.
+
+**Wizard of Oz**: Human secretly controls robot to test interfaces before full automation exists.
+
+**Longitudinal**: Study interaction over extended periods to understand adaptation.
+
+## Key Takeaways
+
+- **HRI types** range from remote teleoperation to physical collaboration
+- **Safety is foundational**; robots must never injure humans
+- **Transparency and predictability** build trust and enable effective collaboration
+- **ISO 15066** specifies force limits for safe physical interaction
+- **Multiple communication modalities** (speech, gesture, gaze) enable natural interaction
+- **Social behaviors** like appropriate gaze, proxemics, and timing make robots more acceptable
+- **Trust** is built through consistent, transparent, competent behavior
+- **Evaluation** requires measuring both task performance and user experience
+
+As robots move from factories into human spaces, HRI becomes increasingly important. The most capable robot is useless if people don't want to work with it. Good HRI design makes robots that people trust, understand, and can work with effectively.
+
+---
+
+**Next Chapter**: [Multi-Robot Systems](../../week-11/module-01/multi-robot-systems)

@@ -1,0 +1,151 @@
+/**
+ * Styles for the DocItem Footer with quiz section.
+ */
+
+.quizSection {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.quizCard {
+  padding: 1.5rem;
+  background: linear-gradient(
+    135deg,
+    var(--ifm-color-primary-lightest) 0%,
+    var(--ifm-background-surface-color) 100%
+  );
+  border: 1px solid var(--ifm-color-primary-light);
+  border-radius: 12px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+[data-theme='dark'] .quizCard {
+  background: linear-gradient(
+    135deg,
+    rgba(var(--ifm-color-primary-rgb), 0.1) 0%,
+    var(--ifm-background-surface-color) 100%
+  );
+}
+
+.quizHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.quizIcon {
+  color: var(--ifm-color-primary);
+}
+
+.quizTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ifm-color-content);
+}
+
+.quizDescription {
+  color: var(--ifm-color-content-secondary);
+  font-size: 0.95rem;
+  margin: 0 0 1.25rem;
+  line-height: 1.5;
+}
+
+.quizButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quizButton:hover {
+  background: var(--ifm-color-primary-dark);
+  transform: translateY(-1px);
+}
+
+.quizButton:active {
+  transform: translateY(0);
+}
+
+.quizButton svg {
+  fill: currentColor;
+}
+
+.loginPrompt {
+  padding: 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.loginPrompt p {
+  margin: 0;
+  color: var(--ifm-color-content-secondary);
+  font-size: 0.9rem;
+}
+
+.loginLink {
+  color: var(--ifm-color-primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.loginLink:hover {
+  text-decoration: underline;
+}
+
+.quizFeatures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.85rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+.feature svg {
+  color: var(--ifm-color-primary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .quizCard {
+    padding: 1.25rem;
+  }
+
+  .quizTitle {
+    font-size: 1.1rem;
+  }
+
+  .quizDescription {
+    font-size: 0.9rem;
+  }
+
+  .quizButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .quizFeatures {
+    justify-content: center;
+  }
+}

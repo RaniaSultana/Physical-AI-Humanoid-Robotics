@@ -1,0 +1,308 @@
+---
+sidebar_position: 2
+title: Bipedal Locomotion
+description: Understanding and implementing walking and running in humanoid robots
+---
+
+# Bipedal Locomotion
+
+Walking on two legs is one of the most challenging problems in robotics. What humans do effortlessly, robots struggle to replicate. This chapter explores the principles of bipedal locomotion, from the biomechanics of human walking to the control algorithms that enable humanoid robots to walk, run, and recover from disturbances.
+
+## The Challenge of Bipedal Walking
+
+### Why Walking is Hard
+
+Bipedal walking presents unique challenges that don't exist for wheeled or even four-legged robots:
+
+| Challenge | Description | Implication |
+|-----------|-------------|-------------|
+| **Underactuation** | Cannot directly control body position in space | Must use ground reaction forces indirectly |
+| **Hybrid Dynamics** | Continuous motion with discrete contact events | Foot strike changes system dynamics instantly |
+| **Balance** | Inherently unstable - must actively maintain | Fast feedback control essential |
+| **High Dimensionality** | Many joints to coordinate simultaneously | Complex optimization at each step |
+| **Contact Forces** | Must generate specific ground reaction forces | Friction limits constrain possible motions |
+
+The fundamental issue is that humanoid robots are underactuated: they have more configuration variables (body position and orientation in space) than actuators (joint torques). The robot cannot directly command its center of mass to move; it must create the right contact forces with the ground to indirectly achieve the desired motion.
+
+### Human Walking: The Target
+
+Human walking is remarkably efficient, using minimal energy for the distance covered. Key features of human walking include:
+
+**Passive Dynamics**: Much of human walking exploits the natural pendulum-like motion of the legs, minimizing muscle effort.
+
+**Energy Storage**: Tendons store and return elastic energy, particularly in the ankle during push-off.
+
+**Coordination**: Arms swing in opposition to legs, reducing angular momentum that would otherwise need to be absorbed.
+
+**Adaptability**: Humans unconsciously adjust gait to terrain, speed, and obstacles.
+
+Replicating this efficiency in robots remains an open challenge. Current humanoid robots use 5-10 times more energy per distance than humans.
+
+## Gait Phases and Timing
+
+### The Walking Gait Cycle
+
+A complete walking cycle consists of two main phases for each leg: stance (foot on ground) and swing (foot in air). For normal walking, the cycle timing is approximately:
+
+| Phase | Percentage | Description | Stability |
+|-------|------------|-------------|-----------|
+| **Initial Double Support** | 0-12% | Both feet on ground, weight shifting | High |
+| **Single Support** | 12-50% | One foot on ground, other swinging | Lower |
+| **Terminal Double Support** | 50-62% | Both feet on ground, weight shifting | High |
+| **Opposite Single Support** | 62-100% | Other leg now swinging | Lower |
+
+During single support phases, the robot balances on a support polygon the size of one foot, making balance more challenging. Double support phases provide stability but represent only about 20% of normal walking time.
+
+### Walking vs. Running
+
+The key difference between walking and running is the presence of a flight phase:
+
+**Walking**: At least one foot is always in contact with the ground. The body vaults over the stance leg like an inverted pendulum.
+
+**Running**: Both feet leave the ground during the flight phase. The legs act more like springs, with the body bouncing from step to step.
+
+| Aspect | Walking | Running |
+|--------|---------|---------|
+| Double support | Yes (~20%) | No |
+| Flight phase | No | Yes |
+| Energy pattern | Inverted pendulum | Spring-mass |
+| CoM motion | Highest at mid-stance | Lowest at mid-stance |
+| Ground contact time | Longer | Shorter |
+
+Running is more challenging because there's no ground contact during flight, meaning no ability to generate corrective forces. The robot must plan trajectories that land correctly and can tolerate landing errors.
+
+## Walking Pattern Generation
+
+### Zero Moment Point Preview Control
+
+ZMP preview control is a classic approach to walking pattern generation. The key idea is to plan the robot's center of mass trajectory such that the resulting ZMP stays within the support polygon at all times.
+
+**The Preview Concept**: Instead of reacting to the current ZMP, the controller looks ahead in time (typically 1-2 seconds) to plan a CoM trajectory that will produce the desired ZMP trajectory.
+
+**Footstep Planning**: First, decide where to place each foot (footstep sequence). The ZMP reference trajectory is then defined by these footstep locations.
+
+**CoM Trajectory**: Solve for the CoM trajectory that keeps ZMP at the reference. This is typically done using a simplified model (Linear Inverted Pendulum Model) that makes the math tractable.
+
+**Inverse Kinematics**: Convert the CoM trajectory and foot positions into joint angles that achieve the desired motion.
+
+:::tip LIPM Simplification
+The Linear Inverted Pendulum Model assumes constant CoM height and treats the robot as a point mass at the CoM. These simplifications make planning fast but introduce errors that must be handled by lower-level controllers.
+:::
+
+### Capture Point Control
+
+Capture point (or Divergent Component of Motion) control provides an alternative to ZMP preview control with better push recovery properties.
+
+**Key Insight**: The capture point represents where the robot will end up if it takes no corrective action. By controlling the capture point, the robot controls its "fate."
+
+**For Walking**: Plan the capture point to smoothly transition from foot to foot. Each step places the foot near the capture point to "capture" the robot's momentum.
+
+**For Push Recovery**: When pushed, the capture point suddenly moves. The robot must take a step to a new location that intercepts this shifted capture point.
+
+| Scenario | Response |
+|----------|----------|
+| Capture point inside current foot | Stand in place |
+| Capture point outside foot, in step range | Take corrective step |
+| Capture point beyond step range | Multiple steps or fall |
+
+The advantage of capture point control is its natural handling of disturbances. Rather than re-planning the entire trajectory, the controller simply adjusts the next step location.
+
+## Dynamic Walking Algorithms
+
+### Hybrid Zero Dynamics
+
+Hybrid Zero Dynamics (HZD) is a mathematically rigorous approach to designing stable walking gaits.
+
+**Core Concept**: Define the walking motion through virtual constraints that couple the robot's configuration to a phase variable (like the stance leg angle). Then prove that if the robot starts on these constraints, it stays on them and the walking is stable.
+
+**Virtual Constraints**: Specify desired behavior as functions of gait phase:
+- Swing foot height as a function of gait phase
+- Swing foot horizontal position
+- Torso orientation
+- Arm motion (optional)
+
+**Stability Analysis**: Use Poincare maps to analyze the stability of the periodic walking motion. If small deviations return to the nominal trajectory, the gait is stable.
+
+HZD has produced some of the most dynamic walking and running behaviors, including blind stair climbing and running on uneven terrain.
+
+### Model Predictive Control
+
+Model Predictive Control (MPC) optimizes walking over a rolling time horizon, re-planning at each control cycle.
+
+**Optimization Problem**: At each timestep, solve for the best sequence of actions over the next 1-2 seconds that:
+- Tracks desired velocity/heading
+- Keeps ZMP/capture point in valid regions
+- Respects physical constraints (friction, torque limits)
+- Minimizes energy
+
+**Rolling Horizon**: Execute the first action, measure the state, and re-optimize. This provides robustness to model errors and disturbances.
+
+| MPC Advantage | Description |
+|---------------|-------------|
+| **Constraint handling** | Naturally incorporates friction, torque limits |
+| **Preview capability** | Plans around obstacles before reaching them |
+| **Optimality** | Finds efficient solutions, not just feasible ones |
+| **Disturbance rejection** | Re-plans based on actual state |
+
+The challenge with MPC is computational cost. Real-time MPC for full humanoid dynamics requires efficient algorithms and powerful computers.
+
+## Learning-Based Locomotion
+
+### Why Learn Walking?
+
+Despite decades of progress in model-based walking control, learned approaches have recently achieved remarkable results. Learning offers several advantages:
+
+**Adaptability**: Learned policies can handle terrain and conditions not explicitly modeled.
+
+**Robustness**: Training with disturbances produces policies that naturally resist perturbations.
+
+**Efficiency**: Learning can discover efficient gaits that aren't obvious to human designers.
+
+**Generalization**: A single policy can handle walking, running, turning, and transitions.
+
+### Reinforcement Learning for Walking
+
+The typical setup for learning to walk:
+
+**Observation Space**: Joint positions and velocities, body orientation and angular velocity, sometimes history of past observations.
+
+**Action Space**: Joint position or torque commands at 50-100 Hz.
+
+**Reward Function**: Combination of:
+- Forward velocity tracking
+- Orientation maintenance (stay upright)
+- Energy minimization
+- Foot clearance
+- Smoothness (minimize jerky motion)
+- Termination penalty for falling
+
+**Training Environment**: Massive parallelization in simulation (thousands to millions of episodes).
+
+### Domain Randomization for Walking
+
+For learned walking policies to transfer to real robots, domain randomization is essential:
+
+| Randomized Parameter | Range | Purpose |
+|---------------------|-------|---------|
+| Friction coefficient | 0.3-1.5 | Handle different floors |
+| Motor strength | 80-120% | Account for manufacturing variation |
+| Push forces | 0-100N | Build disturbance rejection |
+| Terrain height | +/- 5cm | Handle uneven ground |
+| Sensor noise | Varies | Robust state estimation |
+| Control delay | 0-50ms | Handle real latency |
+
+Policies trained with comprehensive randomization transfer more reliably to physical robots.
+
+:::note AMP and Motion Imitation
+Adversarial Motion Priors (AMP) is a technique that uses a discriminator to encourage learned gaits to look like reference motion (e.g., human walking). This produces more natural-looking locomotion while maintaining the robustness of RL-trained policies.
+:::
+
+## Balance and Push Recovery
+
+### Ankle Strategy
+
+For small disturbances, the robot can recover balance without stepping by modulating ankle torques:
+
+**Mechanism**: Apply torque at the ankles to shift the ZMP within the current support polygon. This creates a restoring moment that counteracts the disturbance.
+
+**Limits**: Only works when CoM is near the support polygon center. Maximum recovery is limited by the support polygon size.
+
+### Hip Strategy
+
+For moderate disturbances, the robot uses hip motion to help recover:
+
+**Mechanism**: Rapidly accelerating the arms or torso creates a reaction torque on the legs that shifts the CoM.
+
+**Use Case**: When ankle strategy alone is insufficient but stepping isn't yet necessary.
+
+### Stepping Strategy
+
+For large disturbances, the robot must take a step to prevent falling:
+
+**Capture Point Calculation**: Compute where the CoM will end up given current position and velocity.
+
+**Step Placement**: Place the foot at or beyond the capture point to arrest the fall.
+
+**Step Timing**: Faster steps provide more aggressive recovery but require more dynamic capability.
+
+| Disturbance Size | Strategy | Response Time |
+|------------------|----------|---------------|
+| Small (less than 5% body weight) | Ankle | 50-100ms |
+| Medium (5-15%) | Hip + Ankle | 100-200ms |
+| Large (greater than 15%) | Stepping | 200-500ms |
+
+## Terrain Adaptation
+
+### Stair Climbing
+
+Stairs present a structured challenge for bipedal locomotion:
+
+**Increased Leg Lift**: Swing leg must clear the step height (typically 15-20cm).
+
+**Increased Push-Off**: More ankle/leg power needed to lift the body.
+
+**Balance Challenges**: Smaller effective support polygon on each step.
+
+**Sensing Requirements**: Must detect step locations and heights.
+
+Blind stair climbing (without vision) relies on contact detection and fast reflexes. Vision-guided approaches can plan foot placements in advance.
+
+### Uneven Terrain
+
+Natural terrain is unpredictable, requiring adaptive locomotion:
+
+**Foot Placement Adjustment**: Shift foot position based on detected terrain height.
+
+**Compliance**: Allow some "give" when contact occurs at unexpected times.
+
+**Balance Adaptation**: Maintain balance despite varying ground reaction forces.
+
+**Gait Modification**: Slow down, shorten steps, or increase foot clearance for difficult terrain.
+
+Learning-based approaches have shown remarkable ability to handle uneven terrain by training on randomized terrain in simulation.
+
+## Energy and Efficiency
+
+### Sources of Energy Loss
+
+Bipedal walking consumes energy through:
+
+**Impact Losses**: Foot strike dissipates kinetic energy as heat and noise.
+
+**Friction**: Joint friction wastes energy.
+
+**Negative Work**: Muscles/motors doing work against motion (braking).
+
+**Control Effort**: Active balancing requires continuous motor effort.
+
+### Improving Efficiency
+
+Strategies for more efficient walking:
+
+**Passive Dynamics**: Design limbs to have natural swing frequencies near desired gait speeds.
+
+**Energy Storage**: Use springs (series elastic actuators) to store and return energy.
+
+**Compliant Actuation**: Match actuator impedance to task requirements.
+
+**Gait Optimization**: Find gaits that minimize energy for desired speed.
+
+Efficient walking is not just about energy cost; it also extends battery life and reduces heat generation.
+
+## Key Takeaways
+
+- **Bipedal walking is challenging** due to underactuation, hybrid dynamics, and inherent instability
+- **Gait phases** alternate between stable double support and less stable single support
+- **ZMP and capture point** are fundamental concepts for balance during dynamic walking
+- **Pattern generation** plans foot placements and CoM trajectories to maintain balance
+- **Model-based methods** (HZD, MPC) provide formal stability guarantees
+- **Learning-based methods** offer robustness and adaptability through massive training
+- **Push recovery** uses ankle, hip, and stepping strategies depending on disturbance magnitude
+- **Terrain adaptation** requires sensing, planning, and compliant control
+- **Efficiency** remains a challenge; current robots use much more energy than humans
+
+The field is rapidly advancing, with learned policies achieving increasingly robust locomotion and model-based methods providing safety guarantees. The combination of both approaches points toward the future of humanoid walking.
+
+---
+
+**Next Chapter**: [Humanoid Manipulation](../../week-10/module-01/humanoid-manipulation)

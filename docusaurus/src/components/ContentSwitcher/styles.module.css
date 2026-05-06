@@ -1,0 +1,51 @@
+.translatedContent {
+  padding: 20px;
+  background: var(--ifm-color-gray-50);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.urduTitle {
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--ifm-color-primary);
+  margin-bottom: 20px;
+  text-align: right;
+  line-height: 1.6;
+}
+
+.urduText {
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
+  font-size: 1.2rem;
+  line-height: 2;
+  color: var(--ifm-font-color-base);
+  text-align: right;
+  direction: rtl;
+}
+
+.urduText p {
+  margin-bottom: 16px;
+}
+
+.urduText h1,
+.urduText h2,
+.urduText h3 {
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
+  text-align: right;
+  margin-top: 24px;
+  margin-bottom: 12px;
+}
+
+/* Dark mode */
+[data-theme='dark'] .translatedContent {
+  background: var(--ifm-color-gray-900);
+}
+
+[data-theme='dark'] .urduTitle {
+  color: var(--ifm-color-primary-lightest);
+}
+
+[data-theme='dark'] .urduText {
+  color: var(--ifm-color-gray-200);
+}

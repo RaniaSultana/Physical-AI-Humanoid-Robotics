@@ -1,0 +1,330 @@
+---
+sidebar_position: 2
+title: Deep Reinforcement Learning for Robotics
+description: Learning robot behaviors through deep reinforcement learning
+---
+
+# Deep Reinforcement Learning for Robotics
+
+Deep Reinforcement Learning (Deep RL) combines the power of deep neural networks with reinforcement learning, enabling robots to learn complex behaviors from scratch through trial and error. This chapter explores the key algorithms and practical considerations for applying Deep RL to robotics.
+
+## The Reinforcement Learning Framework
+
+### Core Components
+
+At its heart, RL is about an **agent** learning to make decisions in an **environment**:
+
+- **State (s)**: What the agent observes (sensor readings, positions, etc.)
+- **Action (a)**: What the agent can do (motor commands, navigation decisions)
+- **Reward (r)**: Feedback signal indicating success or failure
+- **Policy (π)**: Strategy mapping states to actions
+- **Value function (V)**: Estimated future rewards from a state
+
+### The Learning Loop
+
+1. Agent observes current state
+2. Agent chooses action based on policy
+3. Environment transitions to new state
+4. Agent receives reward
+5. Agent updates policy to maximize future rewards
+6. Repeat (typically millions of times)
+
+:::tip Why "Deep" RL?
+Traditional RL uses tables or simple functions to represent policies and values. Deep RL uses neural networks, enabling handling of high-dimensional inputs (images, point clouds) and complex, continuous action spaces.
+:::
+
+## Reward Design: The Critical Challenge
+
+The reward function tells the agent what to achieve. It's often the most important and difficult aspect of RL.
+
+### Components of Good Rewards
+
+**Goal rewards:** Big positive reward for achieving the objective
+- Reaching a target position: +100
+- Successfully grasping an object: +50
+- Completing a navigation task: +100
+
+**Shaping rewards:** Smaller rewards guiding progress
+- Distance to goal (closer = better)
+- Progress toward objective
+- Maintaining stability
+
+**Penalty rewards:** Negative rewards discouraging bad behavior
+- Collision: -50
+- Falling over: -100
+- Excessive energy use: -0.01 per timestep
+
+### Reward Shaping Pitfalls
+
+**Sparse rewards:** If reward only comes at the end, learning is very slow (hard to discover what leads to success).
+
+**Reward hacking:** Agents find unexpected ways to maximize reward that don't achieve the intended goal. Example: A robot tasked with moving fast might learn to spin in place.
+
+**Over-specified rewards:** Too many reward terms can create conflicting objectives or make behavior brittle.
+
+### Best Practices
+
+- Start with simple, clear objectives
+- Validate that the reward captures intended behavior
+- Monitor for unexpected agent behaviors
+- Iterate on reward design based on observed learning
+
+## Value-Based Methods: DQN Family
+
+### Deep Q-Networks (DQN)
+
+**Q-learning** learns the value of state-action pairs: "How good is taking action a in state s?"
+
+**DQN** uses a neural network to approximate Q-values, enabling handling of large state spaces.
+
+**Key innovations that made DQN work:**
+
+**Experience replay:** Store transitions (s, a, r, s') in a buffer, sample randomly for training
+- Breaks correlation between consecutive samples
+- Reuses experience multiple times
+- More sample efficient
+
+**Target networks:** Use a separate, slowly-updated network for computing targets
+- Stabilizes training
+- Prevents oscillation and divergence
+
+### DQN Limitations for Robotics
+
+- **Discrete actions only:** Can't directly handle continuous motor commands
+- **Sample inefficiency:** Requires millions of interactions
+- **Exploration challenges:** May get stuck in local optima
+
+### Extensions
+
+**Double DQN:** Reduces overestimation of Q-values
+
+**Dueling DQN:** Separates value and advantage estimation
+
+**Prioritized Experience Replay:** Sample important transitions more often
+
+## Policy Gradient Methods
+
+For continuous action spaces (most robotics), policy gradient methods directly optimize the policy.
+
+### The Policy Gradient Idea
+
+Instead of learning values, directly learn a policy (probability distribution over actions).
+
+**Objective:** Maximize expected cumulative reward
+**Method:** Gradient ascent on policy parameters
+
+### REINFORCE Algorithm
+
+The simplest policy gradient:
+
+1. Run policy, collect complete trajectory
+2. Compute return (cumulative discounted reward) for each timestep
+3. Update policy to increase probability of actions that led to high returns
+
+**Limitation:** High variance—learning is noisy and slow.
+
+### Actor-Critic Methods
+
+Combine policy gradient (actor) with value function (critic):
+
+**Actor:** Learns the policy (what actions to take)
+**Critic:** Learns value function (how good is this state?)
+
+The critic reduces variance by providing a baseline for the actor's updates.
+
+## Proximal Policy Optimization (PPO)
+
+**PPO** is the most popular algorithm for robotics. It's stable, simple to implement, and works well across many tasks.
+
+### Key Ideas
+
+**Trust region:** Don't change the policy too much in one update
+- Large changes can destroy learned behavior
+- Small, conservative updates are more reliable
+
+**Clipped objective:** Limit how much the probability ratio can change
+- If new policy is too different from old, clip the gradient
+- Prevents catastrophically large updates
+
+**Multiple epochs:** Reuse collected data for several gradient updates
+- More sample efficient than REINFORCE
+- But not as sample efficient as off-policy methods
+
+### Why PPO for Robotics?
+
+- **Stable training:** Rarely diverges or catastrophically fails
+- **Continuous actions:** Natural fit for motor control
+- **Reasonable sample efficiency:** Better than REINFORCE, simpler than SAC
+- **Well-understood:** Many implementations and hyperparameter guidelines
+
+## Soft Actor-Critic (SAC)
+
+**SAC** is the go-to algorithm when sample efficiency matters.
+
+### Maximum Entropy RL
+
+SAC's key insight: maximize reward AND entropy (randomness) of the policy.
+
+**Why entropy?**
+- Encourages exploration
+- Learns robust policies (not overconfident)
+- Prevents premature convergence
+
+### Off-Policy Learning
+
+SAC is **off-policy**: can learn from data collected by any policy.
+
+**Advantages:**
+- Reuse old experience efficiently
+- Can incorporate demonstrations
+- More sample efficient than on-policy methods
+
+### SAC Components
+
+- **Actor:** Policy network outputs action distribution
+- **Critics:** Two Q-networks (reduces overestimation)
+- **Temperature:** Balances reward vs. entropy (can be learned automatically)
+
+### When to Use SAC vs. PPO
+
+**Use SAC when:**
+- Sample efficiency is critical
+- You can afford the computational complexity
+- You want to incorporate demonstrations
+
+**Use PPO when:**
+- Simplicity is important
+- Training is in simulation (samples are cheap)
+- You want predictable, stable training
+
+## Sim-to-Real Transfer
+
+Training in simulation is safe, fast, and cheap. But simulations aren't perfect—how do we transfer learned policies to real robots?
+
+### The Reality Gap
+
+Simulations differ from reality in:
+- Physics (friction, contacts, dynamics)
+- Sensors (noise characteristics, delays)
+- Actuators (motor response, backlash)
+- Visual appearance (textures, lighting)
+
+Policies that work perfectly in simulation may fail on real hardware.
+
+### Domain Randomization
+
+**Train across many randomized simulations** so the policy works despite variation.
+
+**What to randomize:**
+- Physics parameters (mass, friction, damping)
+- Sensor noise and delays
+- Visual appearance (colors, textures, lighting)
+- Starting conditions and disturbances
+
+**Why it works:** If a policy succeeds despite heavy randomization in simulation, it's robust enough to handle the (relatively small) differences in reality.
+
+### System Identification
+
+**Match simulation to reality** by identifying physical parameters from real data.
+
+**Process:**
+1. Collect data from real robot (apply test inputs, measure responses)
+2. Optimize simulation parameters to match observed behavior
+3. Train in calibrated simulation
+
+**Trade-off:** More accurate simulation but may still miss subtle effects.
+
+### Hybrid Approaches
+
+**Combine domain randomization and system identification:**
+1. Initial training with heavy randomization
+2. Identify key parameters from real robot
+3. Fine-tune simulation
+4. Final training on calibrated simulation with reduced randomization
+
+## Safety in Robot Learning
+
+### Challenges
+
+- **Exploration can be dangerous:** Random actions may damage robot or surroundings
+- **Learning takes many trials:** Each trial is a chance for failure
+- **Sim-to-real gap:** Policies may behave unexpectedly on real hardware
+
+### Strategies
+
+**Constrained RL:** Add safety constraints to the optimization
+- "Never exceed joint limits"
+- "Maintain minimum distance from humans"
+
+**Safe exploration:** Use uncertainty estimates to avoid risky actions
+- If unsure about outcome, be conservative
+- Gradually expand exploration as confidence grows
+
+**Human oversight:** Keep human in the loop
+- Start with slow motions
+- Increase autonomy as confidence builds
+- Emergency stop always available
+
+**Simulation pre-training:** Train extensively in simulation before real deployment
+- Real robot sees only validated policies
+- Fine-tuning on real robot with limited exploration
+
+## Practical Tips
+
+### Starting a Deep RL Project
+
+1. **Start with simulation:** Get everything working in simulation first
+2. **Simple environments first:** Verify learning on simple tasks
+3. **Validate reward:** Ensure reward produces intended behavior
+4. **Log everything:** Rewards, losses, behaviors—you'll need them for debugging
+5. **Use proven implementations:** Don't write from scratch; use established libraries
+
+### Hyperparameter Tuning
+
+Key parameters that matter most:
+- **Learning rate:** Too high = instability, too low = slow learning
+- **Batch size:** Larger often better, memory permitting
+- **Network architecture:** Start simple, add complexity if needed
+- **Reward scaling:** Keep rewards in reasonable range
+
+### Common Failure Modes
+
+**Training doesn't converge:** Check reward function, reduce learning rate, simplify task
+
+**Policy works in training but not deployment:** Distribution shift—add more variety to training
+
+**Reward hacking:** Redesign reward, add constraints
+
+**Sim-to-real failure:** More domain randomization, system identification, or real fine-tuning
+
+## Key Takeaways
+
+1. **Deep RL enables learning complex behaviors** from interaction, without explicit programming.
+
+2. **Reward design is crucial** and often the hardest part—iterate carefully.
+
+3. **DQN works for discrete actions**, policy gradients for continuous.
+
+4. **PPO is the reliable workhorse**—stable, simple, widely applicable.
+
+5. **SAC offers better sample efficiency** at the cost of complexity.
+
+6. **Sim-to-real transfer requires careful attention**—domain randomization and system identification help.
+
+7. **Safety must be built in** through constraints, human oversight, and conservative exploration.
+
+8. **Start simple and iterate**—complex RL projects fail when attempted all at once.
+
+:::caution Reality Check
+Deep RL is powerful but challenging. Expect:
+- Days to weeks of training time for complex tasks
+- Significant hyperparameter tuning
+- Sim-to-real challenges requiring iteration
+- Safety concerns during real-world deployment
+
+The technology is advancing rapidly, but robust real-world deployment still requires substantial engineering effort.
+:::
+
+---
+
+**Next Chapter**: [Neural Network Architectures for Robotics](/week-06/module-01/neural-network-architectures) — We explore the specific neural network architectures best suited for robotics applications, from CNNs for vision to transformers for multi-modal reasoning.

@@ -1,0 +1,307 @@
+---
+sidebar_position: 1
+title: Robot Kinematics
+description: Understanding forward and inverse kinematics for robot arms
+---
+
+# Robot Kinematics
+
+Kinematics is the study of motion without considering forces. For robot arms, kinematics answers two fundamental questions that underpin all manipulation:
+
+- **Forward kinematics**: Given the angles of all joints, where is the end-effector (gripper/tool)?
+- **Inverse kinematics**: Given a desired end-effector position, what joint angles achieve it?
+
+These questions seem straightforward but have elegant mathematical structures and practical challenges that every roboticist must understand.
+
+## The Kinematic Challenge
+
+Consider a robot arm reaching for a cup on a table. You know where the cup is (coordinates in space), but the robot's motors control joint angles. How do you translate "move to position (0.5, 0.3, 0.2) meters" into "set shoulder to 45°, elbow to -30°, wrist to 15°"?
+
+This translation—from task space (positions in the world) to joint space (angles at each joint)—is the core kinematic problem.
+
+## Coordinate Frames and Transformations
+
+### Why Multiple Frames?
+
+A robot arm has many parts, each with its own local reference frame:
+- The base frame (attached to the floor or table)
+- Each link has its own frame
+- The end-effector frame (where the gripper is)
+
+Kinematics involves transforming between these frames systematically.
+
+### Position and Orientation
+
+To fully specify where a robot's end-effector is, we need:
+- **Position**: 3 numbers (x, y, z) specifying location
+- **Orientation**: 3 numbers specifying which way it's pointing
+
+Together, these six values define the **pose** of the end-effector. This is why robot arms typically have six joints—each joint provides one degree of freedom to control one aspect of pose.
+
+### Homogeneous Transformations
+
+Mathematicians represent pose using 4×4 **homogeneous transformation matrices**. These matrices elegantly combine rotation and translation into a single mathematical object.
+
+The power of transformation matrices: they **compose by multiplication**. To find the end-effector pose, multiply together the transformations for each link:
+
+**T_base_to_tool = T_01 × T_12 × T_23 × ... × T_(n-1)n**
+
+Each T_ij represents how frame j relates to frame i—the rotation and translation between adjacent links.
+
+### The DH Convention
+
+The **Denavit-Hartenberg (DH) convention** provides a standardized way to define link transformations using just four parameters per joint:
+
+| Parameter | Symbol | Meaning |
+|-----------|--------|---------|
+| **Link length** | a | Distance along the common normal between joint axes |
+| **Link twist** | α | Angle between joint axes |
+| **Link offset** | d | Distance along joint axis |
+| **Joint angle** | θ | Rotation about joint axis (this varies for revolute joints) |
+
+By defining these four numbers for each joint, you can compute the full transformation from base to end-effector.
+
+:::tip Why DH Parameters?
+The DH convention reduces robot description to a simple table of numbers. Once you have the DH table, computing kinematics is mechanical—just multiply matrices.
+:::
+
+## Forward Kinematics
+
+Forward kinematics is the "easy" direction: given joint angles, find end-effector position.
+
+### Two-Link Planar Arm Example
+
+The simplest useful example: a two-joint arm in a plane (like a human arm's shoulder and elbow).
+
+Given:
+- Link 1 length: L1
+- Link 2 length: L2
+- Shoulder angle: θ1
+- Elbow angle: θ2
+
+The end-effector position is:
+- **x = L1 × cos(θ1) + L2 × cos(θ1 + θ2)**
+- **y = L1 × sin(θ1) + L2 × sin(θ1 + θ2)**
+
+Notice how the second joint angle adds to the first—the elbow angle is relative to the upper arm, not to the world.
+
+### General Forward Kinematics
+
+For any robot arm:
+
+1. Define DH parameters for each joint
+2. Compute transformation matrix for each joint
+3. Multiply all matrices together
+4. Extract position (and orientation) from result
+
+The result is always unique—there's exactly one end-effector pose for any given set of joint angles.
+
+### Forward Kinematics is Easy
+
+"Easy" in the sense that:
+- It always has a solution
+- The solution is unique
+- The computation is straightforward matrix multiplication
+
+This contrasts sharply with inverse kinematics.
+
+## Inverse Kinematics
+
+Inverse kinematics (IK) is the "hard" direction: given desired end-effector pose, find joint angles that achieve it.
+
+### Why IK is Hard
+
+Several factors make IK challenging:
+
+**Multiple solutions**: There may be many joint configurations that reach the same position. Think of your arm reaching for a cup—you could have elbow up or elbow down. Both reach the cup, but the arm looks different.
+
+**No solutions**: Some positions are unreachable. Your arm can't reach behind your back without contorting. Robots have similar limits.
+
+**Singularities**: At certain configurations, the robot loses degrees of freedom. Imagine your arm fully extended—you can't move your hand further in that direction.
+
+**Nonlinearity**: The equations relating joint angles to end-effector position involve sines and cosines, making analytical solutions difficult.
+
+### Analytical vs. Numerical IK
+
+**Analytical (closed-form) IK:**
+- Derive explicit formulas for joint angles
+- Fast to compute (just evaluate formulas)
+- Only possible for specific robot geometries
+- Most 6-DOF industrial robots have analytical solutions due to careful design
+
+**Numerical IK:**
+- Iteratively adjust joint angles to reduce position error
+- Works for any robot geometry
+- Can be slow (requires many iterations)
+- May converge to wrong solution or fail to converge
+
+### Two-Link Arm IK Example
+
+For our two-link planar arm, given target (x, y):
+
+1. Calculate distance to target: **d = √(x² + y²)**
+
+2. Check reachability:
+   - If d is greater than L1 + L2: Too far, no solution
+   - If d is less than |L1 - L2|: Too close, no solution
+
+3. Use law of cosines to find elbow angle:
+   - **cos(θ2) = (d² - L1² - L2²) / (2 × L1 × L2)**
+
+4. Two solutions exist: **θ2 = +arccos(...)** or **θ2 = -arccos(...)**
+   - These correspond to "elbow up" and "elbow down" configurations
+
+5. Calculate shoulder angle using geometry
+
+### Numerical IK Methods
+
+For robots without analytical solutions:
+
+**Jacobian-based methods:**
+- Compute the Jacobian matrix (relates joint velocities to end-effector velocities)
+- Invert (or pseudo-invert) to find joint velocity that moves toward target
+- Iterate until close enough
+
+**Optimization-based methods:**
+- Define cost function (e.g., distance to target)
+- Use gradient descent or other optimizers to minimize
+- Can include constraints (joint limits, obstacle avoidance)
+
+**Cyclic Coordinate Descent (CCD):**
+- Adjust one joint at a time to point toward target
+- Cycle through all joints repeatedly
+- Simple and often effective, especially for chains
+
+## Workspace Analysis
+
+### Reachable Workspace
+
+The **reachable workspace** is the set of all points the end-effector can reach in at least one orientation. For a two-link arm, this is an annulus (donut shape):
+- Outer radius: L1 + L2 (fully extended)
+- Inner radius: |L1 - L2| (fully folded)
+
+### Dexterous Workspace
+
+The **dexterous workspace** is the set of points reachable in all orientations. This is typically much smaller than the reachable workspace—or may be empty for robots with fewer than 6 DOF.
+
+### Workspace Visualization
+
+Understanding the workspace helps in:
+- Robot placement (can it reach everything needed?)
+- Task planning (is the motion feasible?)
+- Safety analysis (where might the robot go?)
+
+## Singularities
+
+Singularities are configurations where the robot loses one or more degrees of freedom.
+
+### What Happens at Singularities
+
+At a singularity:
+- The Jacobian matrix becomes singular (non-invertible)
+- Small motion in task space requires infinite joint velocity
+- Control becomes unstable
+- The robot "gets stuck" in certain directions
+
+### Types of Singularities
+
+**Boundary singularities:** At workspace edge (arm fully extended)
+
+**Internal singularities:** Within workspace (e.g., wrist axes aligned)
+
+### Avoiding Singularities
+
+Strategies include:
+- Plan paths that don't pass through singularities
+- Use singularity-robust IK methods
+- Detect approaching singularities and slow down
+- Design robots to minimize singularity regions
+
+## Degrees of Freedom
+
+### How Many Joints?
+
+- **3 DOF**: Can reach any point but not control orientation (SCARA robots)
+- **6 DOF**: Can reach any point in any orientation (standard industrial arms)
+- **7+ DOF**: Redundant—extra flexibility for obstacle avoidance
+
+### Redundancy
+
+A **redundant robot** has more joints than needed for the task. A 7-DOF arm reaching a 6-DOF pose has infinite solutions.
+
+Redundancy enables:
+- Avoiding obstacles
+- Avoiding singularities
+- Optimizing secondary objectives (minimize energy, maximize manipulability)
+
+The extra freedom requires choosing among infinite solutions—typically via optimization.
+
+## Velocity Kinematics
+
+### The Jacobian
+
+The **Jacobian matrix** relates joint velocities to end-effector velocities:
+
+**v_end_effector = J × θ_dot_joints**
+
+Where J is the Jacobian (a 6×n matrix for n joints).
+
+### Why Velocity Kinematics Matters
+
+- **Motion planning**: How fast can the end-effector move?
+- **Singularity detection**: J becomes singular at singularities
+- **Force analysis**: Forces at end-effector relate to joint torques via J^T
+- **Numerical IK**: Jacobian inverse drives iterative solutions
+
+### Manipulability
+
+**Manipulability** measures how well the robot can move in all directions:
+- High manipulability: Can move equally well in all directions
+- Low manipulability: Near singularity, some directions are hard
+- Zero manipulability: At singularity
+
+Manipulability ellipsoids visualize this—stretched ellipsoids indicate direction-dependent capability.
+
+## Practical Applications
+
+### Pick and Place
+
+1. Compute IK for grasp position
+2. Plan trajectory in joint space
+3. Execute motion
+4. Repeat for place position
+
+### Continuous Path Motion
+
+For welding, painting, etc.:
+1. Define path in task space
+2. Sample points along path
+3. Compute IK for each point
+4. Interpolate between solutions
+5. Watch for singularities
+
+### Visual Servoing
+
+Use camera feedback to guide motion:
+1. Detect object position from camera
+2. Compute IK for approach
+3. Close loop using visual feedback
+4. Handle errors through iterative adjustment
+
+## Key Takeaways
+
+1. **Forward kinematics always has a unique solution**: Joint angles fully determine end-effector pose.
+
+2. **Inverse kinematics may have zero, one, or many solutions**: The hard part is finding valid, desirable solutions.
+
+3. **DH parameters systematically describe robot geometry**: Four numbers per joint enable consistent kinematic analysis.
+
+4. **Singularities cause control problems**: Understanding and avoiding them is crucial for reliable operation.
+
+5. **6 DOF enables full position and orientation control**: Fewer DOF limits capability; more provides redundancy.
+
+6. **The Jacobian connects velocities and forces**: Essential for motion planning and control.
+
+---
+
+**Next Chapter**: [Introduction to ROS](/week-04/module-01/ros-introduction) — We shift from mathematical foundations to practical tools, introducing the Robot Operating System that enables building complex robot systems.

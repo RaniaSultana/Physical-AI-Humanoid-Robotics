@@ -1,0 +1,11 @@
+{
+  "fileWatcher": {
+    "ignored": [
+      "**/node_modules/**",
+      "**/.git/**",
+      "/var/folders/**/T/**",
+      "**/ssh-askpass-*.sock",
+      "**/vscode-git-*.sock"
+    ]
+  }
+}

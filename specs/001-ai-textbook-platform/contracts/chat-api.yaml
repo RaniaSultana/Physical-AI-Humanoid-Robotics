@@ -1,0 +1,437 @@
+openapi: 3.0.3
+info:
+  title: AI Textbook Platform - Chat API
+  version: 1.0.0
+  description: |
+    RAG-based AI chatbot endpoints for the AI-Native Interactive Textbook Platform.
+    Implements FR-005, FR-006, FR-007, FR-008, FR-009.
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: chat
+    description: AI chatbot operations
+  - name: conversations
+    description: Conversation management
+
+paths:
+  /chat/ask:
+    post:
+      tags: [chat]
+      summary: Ask a question
+      description: |
+        Submit a question to the RAG chatbot. Answers are based ONLY on textbook content (FR-005).
+        Supports full-book search and selected-text modes (FR-006).
+        All responses include citations (FR-007).
+        Out-of-scope questions are declined gracefully (FR-008).
+        Responses adapt to user background when set (FR-009).
+      operationId: askQuestion
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AskRequest'
+      responses:
+        '200':
+          description: Question answered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AskResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required (FR-013)
+        '422':
+          description: Question cannot be answered from textbook content
+
+  /chat/stream:
+    post:
+      tags: [chat]
+      summary: Ask with streaming response
+      description: Same as /chat/ask but with Server-Sent Events for streaming
+      operationId: askQuestionStream
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AskRequest'
+      responses:
+        '200':
+          description: Streaming response
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/StreamEvent'
+        '401':
+          description: Authentication required
+
+  /conversations:
+    get:
+      tags: [conversations]
+      summary: List user conversations
+      description: Get all conversations for the authenticated user
+      operationId: listConversations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by chapter
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationList'
+        '401':
+          description: Not authenticated
+
+    post:
+      tags: [conversations]
+      summary: Create new conversation
+      description: Start a new conversation, optionally linked to a chapter
+      operationId: createConversation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConversationRequest'
+      responses:
+        '201':
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '401':
+          description: Not authenticated
+
+  /conversations/{conversation_id}:
+    get:
+      tags: [conversations]
+      summary: Get conversation
+      description: Get conversation with all messages
+      operationId: getConversation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Conversation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationWithMessages'
+        '401':
+          description: Not authenticated
+        '404':
+          description: Conversation not found
+
+    delete:
+      tags: [conversations]
+      summary: Delete conversation
+      description: Delete a conversation and all its messages
+      operationId: deleteConversation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Conversation deleted
+        '401':
+          description: Not authenticated
+        '404':
+          description: Conversation not found
+
+  /conversations/{conversation_id}/messages:
+    post:
+      tags: [conversations]
+      summary: Add message to conversation
+      description: Continue a conversation with a new question
+      operationId: addMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMessageRequest'
+      responses:
+        '200':
+          description: Message added and response generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagePair'
+        '401':
+          description: Not authenticated
+        '404':
+          description: Conversation not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AskRequest:
+      type: object
+      required:
+        - question
+      properties:
+        question:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          example: What is the difference between ROS1 and ROS2?
+        context_mode:
+          type: string
+          enum: [full_book, selected_text]
+          default: full_book
+          description: |
+            - full_book: Search entire textbook for relevant content
+            - selected_text: Only use the provided selected_text as context
+        selected_text:
+          type: string
+          maxLength: 10000
+          description: Required when context_mode is 'selected_text'
+        conversation_id:
+          type: string
+          format: uuid
+          description: Continue existing conversation (maintains context)
+        chapter_context:
+          type: string
+          format: uuid
+          description: Optional chapter ID to prioritize in search
+
+    AskResponse:
+      type: object
+      properties:
+        answer:
+          type: string
+          description: AI-generated answer based on textbook content
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+          description: References to textbook sections (FR-007)
+        conversation_id:
+          type: string
+          format: uuid
+          description: Conversation this message belongs to
+        message_id:
+          type: string
+          format: uuid
+        out_of_scope:
+          type: boolean
+          description: True if question couldn't be answered from textbook
+        suggested_topics:
+          type: array
+          items:
+            type: string
+          description: Related topics if out_of_scope is true
+
+    Citation:
+      type: object
+      properties:
+        chapter_id:
+          type: string
+          format: uuid
+        chapter_slug:
+          type: string
+          example: week-01/module-01/introduction
+        chapter_title:
+          type: string
+          example: Introduction to Physical AI
+        section_title:
+          type: string
+          example: What is Embodied Intelligence?
+        quote:
+          type: string
+          description: Relevant excerpt from the source
+        relevance_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+
+    StreamEvent:
+      type: object
+      properties:
+        event:
+          type: string
+          enum: [token, citation, done, error]
+        data:
+          type: string
+          description: Token text, citation JSON, or error message
+
+    CreateConversationRequest:
+      type: object
+      properties:
+        chapter_id:
+          type: string
+          format: uuid
+          description: Link conversation to a specific chapter
+        title:
+          type: string
+          maxLength: 255
+          description: Optional title (auto-generated if not provided)
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        chapter_id:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        is_active:
+          type: boolean
+        message_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ConversationList:
+      type: object
+      properties:
+        conversations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conversation'
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    ConversationWithMessages:
+      allOf:
+        - $ref: '#/components/schemas/Conversation'
+        - type: object
+          properties:
+            messages:
+              type: array
+              items:
+                $ref: '#/components/schemas/Message'
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+          nullable: true
+        context_mode:
+          type: string
+          enum: [full_book, selected_text]
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    AddMessageRequest:
+      type: object
+      required:
+        - question
+      properties:
+        question:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        context_mode:
+          type: string
+          enum: [full_book, selected_text]
+          default: full_book
+        selected_text:
+          type: string
+          maxLength: 10000
+
+    MessagePair:
+      type: object
+      properties:
+        user_message:
+          $ref: '#/components/schemas/Message'
+        assistant_message:
+          $ref: '#/components/schemas/Message'
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object

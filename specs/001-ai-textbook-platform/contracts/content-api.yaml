@@ -1,0 +1,629 @@
+openapi: 3.0.3
+info:
+  title: AI Textbook Platform - Content API
+  version: 1.0.0
+  description: |
+    Content management and retrieval endpoints for the AI-Native Interactive Textbook Platform.
+    Implements FR-001, FR-002, FR-003, FR-004, FR-011, FR-018, FR-019, FR-020, FR-021.
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: content
+    description: Content retrieval (public + authenticated)
+  - name: progress
+    description: Reading progress tracking
+  - name: authoring
+    description: Content authoring (author role only)
+
+paths:
+  /content/chapters:
+    get:
+      tags: [content]
+      summary: List all chapters
+      description: Get hierarchical list of all published chapters (FR-001)
+      operationId: listChapters
+      parameters:
+        - name: week
+          in: query
+          schema:
+            type: integer
+          description: Filter by week number
+        - name: include_drafts
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include draft chapters (author only)
+      responses:
+        '200':
+          description: List of chapters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterTree'
+
+  /content/chapters/{slug}:
+    get:
+      tags: [content]
+      summary: Get chapter by slug
+      description: Get chapter metadata by its URL slug
+      operationId: getChapterBySlug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          example: week-01/module-01/introduction
+      responses:
+        '200':
+          description: Chapter metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chapter'
+        '404':
+          description: Chapter not found
+
+  /progress:
+    get:
+      tags: [progress]
+      summary: Get all reading progress
+      description: Get reading progress for all chapters (FR-011)
+      operationId: getAllProgress
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Reading progress for all chapters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressList'
+        '401':
+          description: Authentication required
+
+  /progress/{chapter_id}:
+    get:
+      tags: [progress]
+      summary: Get chapter progress
+      description: Get reading progress for a specific chapter
+      operationId: getChapterProgress
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Chapter progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadingProgress'
+        '401':
+          description: Authentication required
+        '404':
+          description: No progress recorded
+
+    put:
+      tags: [progress]
+      summary: Update chapter progress
+      description: Save or update reading progress for a chapter
+      operationId: updateChapterProgress
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProgressRequest'
+      responses:
+        '200':
+          description: Progress updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadingProgress'
+        '401':
+          description: Authentication required
+
+  /progress/{chapter_id}/complete:
+    post:
+      tags: [progress]
+      summary: Mark chapter complete
+      description: Mark a chapter as completed
+      operationId: markChapterComplete
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Chapter marked complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadingProgress'
+        '401':
+          description: Authentication required
+
+  # Authoring endpoints (FR-018, FR-019, FR-020, FR-021)
+  /authoring/chapters:
+    get:
+      tags: [authoring]
+      summary: List all chapters for authoring
+      description: Get all chapters including drafts (author only)
+      operationId: listAuthoringChapters
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All chapters with status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthoringChapterList'
+        '401':
+          description: Authentication required
+        '403':
+          description: Author role required
+
+    post:
+      tags: [authoring]
+      summary: Create new chapter
+      description: Create a new chapter (FR-020)
+      operationId: createChapter
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChapterRequest'
+      responses:
+        '201':
+          description: Chapter created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthoringChapter'
+        '400':
+          description: Invalid input
+        '401':
+          description: Authentication required
+        '403':
+          description: Author role required
+
+  /authoring/chapters/{chapter_id}:
+    get:
+      tags: [authoring]
+      summary: Get chapter for editing
+      description: Get full chapter content for editing (FR-018)
+      operationId: getAuthoringChapter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Chapter with content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthoringChapterFull'
+        '401':
+          description: Authentication required
+        '403':
+          description: Author role required
+        '404':
+          description: Chapter not found
+
+    put:
+      tags: [authoring]
+      summary: Update chapter
+      description: Update chapter content and metadata
+      operationId: updateChapter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateChapterRequest'
+      responses:
+        '200':
+          description: Chapter updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthoringChapter'
+        '400':
+          description: Invalid input
+        '401':
+          description: Authentication required
+        '403':
+          description: Author role required
+        '404':
+          description: Chapter not found
+
+    delete:
+      tags: [authoring]
+      summary: Delete chapter
+      description: Delete a chapter (FR-020)
+      operationId: deleteChapter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Chapter deleted
+        '401':
+          description: Authentication required
+        '403':
+          description: Author role required
+        '404':
+          description: Chapter not found
+
+  /authoring/chapters/{chapter_id}/publish:
+    post:
+      tags: [authoring]
+      summary: Publish chapter
+      description: Change chapter status from draft to published (FR-019, FR-021)
+      operationId: publishChapter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Chapter published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthoringChapter'
+        '401':
+          description: Authentication required
+        '403':
+          description: Author role required
+        '404':
+          description: Chapter not found
+
+  /authoring/chapters/{chapter_id}/unpublish:
+    post:
+      tags: [authoring]
+      summary: Unpublish chapter
+      description: Change chapter status from published to draft
+      operationId: unpublishChapter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Chapter unpublished
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthoringChapter'
+        '401':
+          description: Authentication required
+        '403':
+          description: Author role required
+        '404':
+          description: Chapter not found
+
+  /authoring/chapters/reorder:
+    post:
+      tags: [authoring]
+      summary: Reorder chapters
+      description: Update chapter ordering within a module (FR-020)
+      operationId: reorderChapters
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderRequest'
+      responses:
+        '200':
+          description: Chapters reordered
+        '400':
+          description: Invalid order
+        '401':
+          description: Authentication required
+        '403':
+          description: Author role required
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ChapterTree:
+      type: object
+      properties:
+        course_id:
+          type: string
+          example: physical-ai-robotics
+        course_title:
+          type: string
+          example: Physical AI & Humanoid Robotics
+        weeks:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekNode'
+
+    WeekNode:
+      type: object
+      properties:
+        week_number:
+          type: integer
+        title:
+          type: string
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModuleNode'
+
+    ModuleNode:
+      type: object
+      properties:
+        module_number:
+          type: integer
+        title:
+          type: string
+        chapters:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChapterSummary'
+
+    ChapterSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        chapter_number:
+          type: integer
+        slug:
+          type: string
+        title:
+          type: string
+        estimated_read_time:
+          type: integer
+          description: Minutes
+
+    Chapter:
+      allOf:
+        - $ref: '#/components/schemas/ChapterSummary'
+        - type: object
+          properties:
+            week_number:
+              type: integer
+            module_number:
+              type: integer
+            word_count:
+              type: integer
+            status:
+              type: string
+              enum: [draft, published]
+            published_at:
+              type: string
+              format: date-time
+              nullable: true
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+
+    ReadingProgress:
+      type: object
+      properties:
+        chapter_id:
+          type: string
+          format: uuid
+        scroll_position:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        completed:
+          type: boolean
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        total_time_seconds:
+          type: integer
+        last_accessed_at:
+          type: string
+          format: date-time
+
+    ProgressList:
+      type: object
+      properties:
+        progress:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReadingProgress'
+        total_chapters:
+          type: integer
+        completed_chapters:
+          type: integer
+        overall_completion:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+
+    UpdateProgressRequest:
+      type: object
+      properties:
+        scroll_position:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        time_spent_seconds:
+          type: integer
+          minimum: 0
+          description: Time spent on this chapter since last update
+
+    AuthoringChapterList:
+      type: object
+      properties:
+        chapters:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthoringChapter'
+
+    AuthoringChapter:
+      allOf:
+        - $ref: '#/components/schemas/Chapter'
+        - type: object
+          properties:
+            has_translations:
+              type: boolean
+            has_personalizations:
+              type: boolean
+            last_indexed_at:
+              type: string
+              format: date-time
+              nullable: true
+
+    AuthoringChapterFull:
+      allOf:
+        - $ref: '#/components/schemas/AuthoringChapter'
+        - type: object
+          properties:
+            content_markdown:
+              type: string
+              description: Full MDX content
+
+    CreateChapterRequest:
+      type: object
+      required:
+        - week_number
+        - module_number
+        - title
+        - content_markdown
+      properties:
+        week_number:
+          type: integer
+          minimum: 1
+        module_number:
+          type: integer
+          minimum: 1
+        chapter_number:
+          type: integer
+          minimum: 1
+          description: Auto-assigned if not provided
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          description: Auto-generated from title if not provided
+        content_markdown:
+          type: string
+          description: MDX content
+
+    UpdateChapterRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        content_markdown:
+          type: string
+        week_number:
+          type: integer
+          minimum: 1
+        module_number:
+          type: integer
+          minimum: 1
+        chapter_number:
+          type: integer
+          minimum: 1
+
+    ReorderRequest:
+      type: object
+      required:
+        - chapter_orders
+      properties:
+        chapter_orders:
+          type: array
+          items:
+            type: object
+            properties:
+              chapter_id:
+                type: string
+                format: uuid
+              new_chapter_number:
+                type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

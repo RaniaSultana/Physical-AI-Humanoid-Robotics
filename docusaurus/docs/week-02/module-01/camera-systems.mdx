@@ -1,0 +1,324 @@
+---
+sidebar_position: 2
+title: Camera Systems
+description: Understanding how robots see through cameras and process visual information
+---
+
+# Camera Systems
+
+Vision is arguably the most powerful sense for both humans and robots. A single image captures millions of data points about the environment—shapes, colors, textures, distances, and movement. This chapter explores how cameras work, how robots process visual information, and the fundamental techniques that enable machine vision.
+
+## How Cameras Work
+
+At its core, a camera is a device that converts light into electrical signals. Understanding this conversion process helps explain both the capabilities and limitations of robot vision.
+
+### The Pinhole Model
+
+The simplest conceptual camera is the pinhole camera—a box with a tiny hole that allows light through. Light from each point in the scene travels through the pinhole and creates an inverted image on the back of the box.
+
+The pinhole model establishes a fundamental relationship: each point in 3D space maps to a single point in the 2D image. This geometric relationship is called **projection**, and it's the basis for understanding how 3D information is captured (and lost) in 2D images.
+
+The critical insight: **depth information is lost**. A point that's one meter away and a point that's ten meters away can project to exactly the same pixel, if they're aligned with the pinhole. This is why a single camera cannot directly measure distance.
+
+### Real Lenses
+
+Pinhole cameras have a fundamental problem: if the hole is tiny (for sharp images), very little light gets through, requiring long exposures. If the hole is larger (for more light), the image becomes blurry.
+
+Lenses solve this by bending light rays so that many rays from the same point converge to the same place on the sensor. This allows both sharpness and brightness.
+
+However, real lenses introduce their own challenges:
+
+**Distortion**: Straight lines in the real world may appear curved in the image. Barrel distortion makes the image bulge outward; pincushion distortion makes it pinch inward. Robot vision systems must correct for distortion to make accurate geometric measurements.
+
+**Depth of Field**: Unlike a pinhole, a lens can only focus at a specific distance. Objects closer or farther than the focal distance appear blurry. This affects what the robot can see clearly at any given focus setting.
+
+**Aberrations**: Color fringing, vignetting (darkening at corners), and other optical imperfections affect image quality differently depending on lens design and price point.
+
+### Digital Sensors
+
+Modern cameras use electronic sensors—grids of millions of tiny light-sensitive elements called pixels. Each pixel measures how much light hits it during the exposure time.
+
+The two main sensor technologies are:
+
+**CCD (Charge-Coupled Device)**: Light creates electrical charge in each pixel. After exposure, charges are shifted row by row to be read out. CCDs produce high-quality images but are slower and more power-hungry.
+
+**CMOS (Complementary Metal-Oxide-Semiconductor)**: Each pixel has its own amplifier and can be read individually. CMOS sensors are faster, cheaper, and more power-efficient, making them dominant in modern cameras.
+
+### Color Sensing
+
+Most cameras use a **Bayer filter**—a pattern of colored filters (red, green, blue) placed over the sensor. Each pixel only sees one color, and the full color image is reconstructed through interpolation.
+
+This means that what appears to be a 12-megapixel color image is actually 12 million measurements of single colors, cleverly combined to estimate what each pixel's full color should be.
+
+## Camera Types for Robotics
+
+Different robot applications require different camera systems.
+
+### Monocular Cameras
+
+A single camera is the simplest and cheapest option. Monocular cameras provide:
+- Color and texture information
+- Shape and pattern recognition
+- Motion detection through frame comparison
+
+Limitations:
+- No direct depth measurement
+- Scale ambiguity (without reference objects)
+- Difficulty with uniform, textureless surfaces
+
+Despite limitations, monocular cameras are remarkably useful. Deep learning has enabled impressive 3D understanding from single images by learning from millions of examples.
+
+### Stereo Cameras
+
+Two cameras separated by a fixed distance (the **baseline**) can perceive depth, similar to human binocular vision.
+
+The principle is **triangulation**: if you know where the same point appears in both images, and you know the geometry of the camera system, you can calculate how far away that point is.
+
+The mathematical relationship is:
+
+**depth = (baseline × focal_length) / disparity**
+
+Where disparity is the difference in pixel position between the left and right images.
+
+**Advantages:**
+- Direct depth measurement
+- Works without special illumination
+- Relatively inexpensive
+
+**Limitations:**
+- Depth accuracy decreases rapidly with distance
+- Requires textured surfaces for matching
+- Computational overhead for stereo matching
+- Calibration between cameras is critical
+
+### Depth Cameras
+
+Depth cameras directly measure distance to each point, producing a **depth image** where pixel values represent distance rather than color.
+
+**Structured Light**: The camera projects a known pattern (often infrared dots or stripes) onto the scene. By observing how the pattern deforms, the system calculates depth. The original Microsoft Kinect used this approach.
+
+Advantages: High accuracy at close range, works on textureless surfaces
+Limitations: Fails in sunlight (which overwhelms the projected pattern), limited range
+
+**Time-of-Flight (ToF)**: The camera emits pulses of infrared light and measures how long each pulse takes to return. Since light travels at a known speed, time directly converts to distance.
+
+Advantages: Works in various lighting, fast frame rates, true per-pixel depth
+Limitations: Lower resolution than regular cameras, affected by surface reflectivity
+
+**Active Stereo**: Combines stereo cameras with projected texture (usually infrared). The projection adds pattern to textureless surfaces, enabling stereo matching where it would otherwise fail.
+
+### Event Cameras
+
+A radically different approach, event cameras don't capture frames at fixed intervals. Instead, each pixel independently signals when it detects a change in brightness.
+
+This creates a stream of events—(x, y, time, polarity)—where polarity indicates whether brightness increased or decreased.
+
+**Remarkable Properties:**
+- Microsecond temporal resolution (1000× faster than regular cameras)
+- Very high dynamic range (sees both bright and dark areas)
+- Low latency (no waiting for frame capture)
+- Low data rates (only changes are reported)
+
+Event cameras are particularly valuable for high-speed robotics—tracking fast-moving objects, drone flight, and situations with rapid lighting changes.
+
+## Camera Calibration
+
+Before using a camera for accurate measurements, it must be calibrated to determine its internal parameters and correct for distortion.
+
+### Intrinsic Parameters
+
+The **camera matrix** (also called intrinsic matrix) describes how 3D points project to 2D pixels:
+
+- **Focal length (fx, fy)**: How much the lens magnifies the scene, measured in pixels
+- **Principal point (cx, cy)**: Where the optical axis intersects the sensor (ideally the image center)
+- **Skew**: Whether the pixel grid is perfectly rectangular (usually assumed zero)
+
+### Distortion Correction
+
+**Radial distortion** coefficients describe how straight lines curve toward or away from the image center. **Tangential distortion** coefficients account for the lens not being perfectly parallel to the sensor.
+
+Calibration determines these coefficients by imaging a known pattern (typically a checkerboard) from multiple angles. The system finds the parameters that best explain the observed image positions of the pattern corners.
+
+Once calibrated, every image can be undistorted—transformed to appear as if taken by an ideal pinhole camera.
+
+### Extrinsic Calibration
+
+If multiple cameras are used together (stereo systems) or a camera is mounted on a robot arm, their relative positions must be known precisely.
+
+**Extrinsic parameters** describe where the camera is and how it's oriented relative to some reference frame (the robot base, another camera, or the world).
+
+## Understanding Images
+
+Before diving into computer vision algorithms, we need to understand what an image actually is from a computational perspective.
+
+### Images as Arrays
+
+A digital image is a 2D array of numbers. For a grayscale image, each number represents brightness (typically 0-255, where 0 is black and 255 is white).
+
+A color image is three such arrays stacked together—one for red, one for green, one for blue. Each pixel has three values describing its color.
+
+This means a 1920×1080 color image contains about 6.2 million numbers. Processing this efficiently is a significant computational challenge.
+
+### Coordinate Systems
+
+Image coordinates typically have:
+- Origin at top-left corner
+- X increasing rightward
+- Y increasing downward
+
+This differs from many mathematical conventions where Y increases upward, a common source of confusion.
+
+### What Images Don't Tell You
+
+It's worth emphasizing what's lost in the imaging process:
+- **Depth**: How far away is each point?
+- **Scale**: How big is each object?
+- **Material**: Is that surface soft, hard, hot, or cold?
+- **Motion**: Is that object moving? (Single frame only)
+- **Context**: What happened before and what might happen next?
+
+Computer vision algorithms try to recover some of this lost information, but it's fundamentally an inference problem—making educated guesses based on patterns learned from experience.
+
+## Basic Image Processing
+
+Before recognizing objects or navigating environments, robots typically process raw images to enhance relevant features and reduce noise.
+
+### Filtering
+
+**Noise reduction**: Real cameras produce noisy images. Smoothing filters average nearby pixels, reducing random variations. The trade-off is blur—small details may be lost.
+
+**Sharpening**: Enhances edges by increasing contrast between adjacent pixels. Useful for highlighting boundaries.
+
+**Edge detection**: Finds locations where image brightness changes rapidly. Edges often correspond to object boundaries, making this fundamental for many vision tasks.
+
+### Color Spaces
+
+RGB (Red, Green, Blue) is how cameras capture color, but other representations are often more useful:
+
+**HSV (Hue, Saturation, Value)**: Separates color (hue) from intensity (value). This makes color-based detection more robust to lighting changes—an orange ball remains orange (same hue) whether in bright sun or shadow.
+
+**Grayscale**: Single-channel intensity. Many algorithms don't need color and run faster on grayscale images.
+
+### Feature Detection
+
+**Features** are distinctive points in an image that can be reliably detected and matched across different views.
+
+**Corners** are particularly useful features—points where edges meet. They're distinctive (unlike edge points, which all look similar) and can be localized precisely.
+
+Classic corner detection looks for regions where shifting the analysis window in any direction causes significant change in the image content.
+
+More sophisticated features (like SIFT, SURF, or ORB) describe not just where features are but what they look like, enabling matching between images taken from different viewpoints or under different lighting.
+
+## Depth Perception
+
+How can robots recover the depth information that projection loses?
+
+### From Stereo
+
+As discussed, stereo vision uses two viewpoints to triangulate depth. The key challenge is **correspondence**—determining which pixel in the left image corresponds to which pixel in the right image.
+
+For textured surfaces, this is tractable. For uniform surfaces (white walls, clear sky), there may be no distinguishing features to match.
+
+### From Motion
+
+If a single camera moves through space, it captures the scene from different viewpoints over time. This is **structure from motion**—the same triangulation principle as stereo, but with temporal separation rather than spatial.
+
+Structure from motion is how visual SLAM (Simultaneous Localization and Mapping) works—the robot builds a 3D map while simultaneously tracking its own position within that map.
+
+### From Learning
+
+Modern deep learning can estimate depth from single images by learning patterns from millions of examples with known depth. The network learns cues like:
+- Objects higher in the image are usually farther away (ground plane assumption)
+- Known object sizes provide scale references
+- Texture gradient (surfaces look finer at distance)
+- Atmospheric haze increases with distance
+
+These learned approaches are impressive but less reliable than direct measurement from stereo or depth cameras.
+
+## Object Recognition
+
+One of the most dramatic successes of computer vision is object recognition—identifying what objects appear in an image.
+
+### The Challenge
+
+Object recognition is hard because the same object looks completely different depending on:
+- Viewpoint (front vs. back vs. side)
+- Lighting (bright, dim, shadows, color temperature)
+- Occlusion (partially hidden behind other objects)
+- Deformation (clothes wrinkled vs. flat, person standing vs. sitting)
+- Intra-class variation (different breeds of dogs are all "dog")
+
+Humans solve this effortlessly, but programming rules to handle all variations proved nearly impossible.
+
+### Deep Learning Revolution
+
+Starting around 2012, deep convolutional neural networks transformed object recognition. Rather than programming rules, networks learn to recognize objects from millions of labeled examples.
+
+The key insight is **hierarchical features**: early layers detect simple patterns (edges, colors), middle layers combine these into parts (eyes, wheels), and final layers recognize whole objects (face, car).
+
+Modern systems achieve superhuman accuracy on benchmark tasks and enable practical applications from facial recognition to autonomous driving.
+
+### Beyond Classification
+
+Object recognition has evolved beyond simple classification:
+- **Detection**: Where in the image are objects of interest?
+- **Segmentation**: Which exact pixels belong to each object?
+- **Instance segmentation**: Distinguishing between multiple objects of the same type
+- **Pose estimation**: How is the object oriented in 3D?
+
+These capabilities are essential for robot manipulation—knowing that there's a cup somewhere in the image isn't enough; the robot needs to know exactly where to reach.
+
+## Practical Considerations
+
+### Lighting
+
+Lighting is perhaps the most underestimated factor in robot vision. Industrial vision systems often include carefully controlled lighting because performance drops dramatically with uncontrolled illumination.
+
+Considerations include:
+- Shadows can create false edges or hide real ones
+- Specular reflections (glare) can saturate the sensor
+- Color temperature affects how colors appear
+- Dynamic range—bright and dark areas in the same scene
+
+### Frame Rate and Resolution
+
+Higher resolution provides more detail but requires more computation and bandwidth. Higher frame rates capture faster motion but also increase data volume.
+
+The optimal choice depends on the application:
+- Warehouse navigation might use low resolution at 10-15 fps
+- Assembly inspection might need high resolution at low frame rate
+- Sports analysis might prioritize frame rate over resolution
+
+### Latency
+
+For real-time robotics, processing delay matters. A robot catching a ball needs to see and react within tens of milliseconds. Complex vision algorithms that take hundreds of milliseconds are too slow for fast interactions.
+
+This creates a fundamental trade-off between algorithm sophistication and response time.
+
+## Key Takeaways
+
+1. **Cameras convert light to electrical signals** through lenses and electronic sensors, with various imperfections that must be understood and corrected.
+
+2. **Projection loses depth information**—the fundamental challenge that stereo, depth cameras, and learning-based methods address.
+
+3. **Camera calibration** determines intrinsic parameters and corrects distortion, essential for accurate measurements.
+
+4. **Different camera types** suit different needs: monocular for simplicity, stereo for passive depth, depth cameras for direct measurement, event cameras for high-speed applications.
+
+5. **Image processing** (filtering, edge detection, feature extraction) prepares images for higher-level analysis.
+
+6. **Deep learning** has revolutionized object recognition, enabling capabilities that were impossible with hand-crafted rules.
+
+7. **Practical factors**—lighting, frame rate, resolution, latency—often determine real-world success more than algorithm sophistication.
+
+---
+
+:::tip Reflection
+Consider your smartphone camera. It contains many of the technologies discussed here:
+- How does it auto-focus? (Related to depth sensing)
+- How does it take good photos in low light? (Sensor and processing technology)
+- How does it recognize faces? (Object detection)
+- Why do some apps use the front camera and others the rear? (Different application needs)
+:::
+
+**Next Chapter**: [LiDAR and Range Sensors](/docs/week-02/module-01/lidar-range-sensors) — We explore laser-based sensing that provides precise distance measurements, essential for autonomous navigation.

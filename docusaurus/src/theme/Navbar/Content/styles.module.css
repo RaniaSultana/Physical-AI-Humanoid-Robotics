@@ -1,0 +1,16 @@
+/* Navbar content styles */
+
+.colorModeToggle {
+  margin-right: 8px;
+}
+
+.authPlaceholder {
+  width: 100px;
+  height: 40px;
+}
+
+/* Ensure profile dropdown appears above other content */
+.profileContainer {
+  position: relative;
+  z-index: 200;
+}

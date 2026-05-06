@@ -1,0 +1,232 @@
+---
+sidebar_position: 1
+title: IMUs and Proprioceptive Sensing
+description: Understanding inertial measurement units and internal state sensing
+---
+
+# IMUs and Proprioceptive Sensing
+
+While cameras and LiDAR tell a robot about its environment, proprioceptive sensors tell the robot about itself—its own position, movement, and internal state. The most important proprioceptive sensor is the IMU (Inertial Measurement Unit), which measures acceleration and rotation. This chapter explores how robots develop self-awareness through internal sensing.
+
+## What is Proprioception?
+
+In biology, proprioception is often called our "sixth sense"—the unconscious perception of movement and spatial orientation. When you close your eyes and touch your nose, proprioception guides your hand. When you walk without looking at your feet, proprioception keeps you balanced.
+
+For robots, proprioception serves the same essential function:
+
+- **Position**: Where are my joints and limbs?
+- **Velocity**: How fast am I moving and in what direction?
+- **Acceleration**: How is my motion changing?
+- **Orientation**: Which way am I facing? Am I tilted?
+- **Force**: What forces am I experiencing or exerting?
+
+:::tip Why Proprioception Matters
+A robot manipulating objects needs to know where its arm is before moving it. A walking robot needs to sense its balance. A drone needs to know its orientation to stay level. Without proprioception, precise control is impossible—imagine trying to walk blindfolded without any sense of where your legs are.
+:::
+
+## The Inertial Measurement Unit (IMU)
+
+An IMU is a compact electronic device that combines multiple inertial sensors to measure motion. Modern IMUs are found in smartphones, drones, vehicles, and nearly every mobile robot.
+
+### Components of an IMU
+
+| Component | What It Measures | Units | Key Characteristics |
+|-----------|-----------------|-------|---------------------|
+| **Accelerometer** | Linear acceleration | m/s² or g | Measures forces including gravity |
+| **Gyroscope** | Angular velocity | rad/s or °/s | Measures rotation rate |
+| **Magnetometer** | Magnetic field | µT or Gauss | Acts as a compass (optional) |
+
+### 6-DOF vs 9-DOF IMUs
+
+IMUs are classified by their "degrees of freedom":
+
+- **6-DOF IMU**: Contains a 3-axis accelerometer and 3-axis gyroscope. Each sensor measures along three perpendicular axes (X, Y, Z), giving six total measurements. This is sufficient for most robotics applications.
+
+- **9-DOF IMU**: Adds a 3-axis magnetometer to the 6-DOF configuration. The magnetometer provides absolute heading information by measuring Earth's magnetic field, functioning like a compass. This helps correct gyroscope drift over time.
+
+## How Accelerometers Work
+
+Accelerometers measure **proper acceleration**—the acceleration felt by an object relative to freefall. This is a subtle but crucial distinction.
+
+### The Gravity Paradox
+
+Here's something counterintuitive: a stationary accelerometer sitting on your desk measures approximately 9.81 m/s² pointing upward, even though it's not moving. Why?
+
+The accelerometer measures the force required to keep it stationary. The desk pushes up on the accelerometer to prevent it from falling. From the accelerometer's perspective, this upward force registers as acceleration. In freefall, an accelerometer would read zero—there's no force acting on it.
+
+This property is both a feature and a challenge:
+- **Feature**: You can determine tilt by measuring how gravity projects onto each axis
+- **Challenge**: You can't distinguish between tilt and linear acceleration without additional information
+
+### Determining Tilt from Gravity
+
+When a robot tilts, the gravity vector projects differently onto the accelerometer's axes. A perfectly level accelerometer measures gravity only on the Z-axis. When tilted 30 degrees forward, some gravity appears on the X-axis.
+
+By analyzing how the gravity vector distributes across all three axes, you can calculate roll (rotation around the forward axis) and pitch (rotation around the side axis). However, yaw (rotation around the vertical axis) cannot be determined from gravity alone—the gravity vector doesn't change when you spin in place.
+
+### Limitations of Accelerometers
+
+- **Cannot detect constant velocity**: An accelerometer in a car cruising at 60 mph on a smooth road reads the same as one sitting still
+- **Sensitive to vibration**: High-frequency mechanical noise corrupts readings
+- **Cannot measure yaw**: Rotation around the vertical axis doesn't affect gravity measurement
+- **Dynamic vs static confusion**: Cannot tell if reading comes from tilt or actual acceleration
+
+## How Gyroscopes Work
+
+Gyroscopes measure **angular velocity**—how fast something is rotating. Modern MEMS (Micro-Electro-Mechanical Systems) gyroscopes use vibrating structures that experience Coriolis forces when rotated.
+
+### Integration for Orientation
+
+To determine actual orientation from a gyroscope, you must integrate angular velocity over time:
+
+**angle(t) = angle(0) + ∫ angular_velocity dt**
+
+This means adding up all the small rotation rates over time. If the gyroscope measures 10°/s for 3 seconds, the total rotation is 30°.
+
+### The Drift Problem
+
+Gyroscope integration has a fatal flaw: **drift**. Small errors accumulate over time:
+
+| Source of Error | Effect |
+|-----------------|--------|
+| **Bias**: Small constant offset in readings | Errors grow linearly with time |
+| **Noise**: Random fluctuations | Errors grow with square root of time |
+| **Scale factor**: Slight gain errors | Errors proportional to total rotation |
+
+In practice, a consumer-grade gyroscope might drift 1-10 degrees per minute. After an hour of operation, the estimated orientation could be completely wrong. This is why gyroscopes alone are insufficient for long-term orientation tracking.
+
+### Gyroscope Advantages
+
+Despite drift, gyroscopes have significant advantages:
+- **Smooth measurements**: No high-frequency noise from vibration
+- **Fast response**: Capture rapid movements accurately
+- **Works in all orientations**: No "gimbal lock" issues
+- **Measures yaw**: Unlike accelerometers, can track rotation around vertical axis
+
+## Sensor Fusion: The Complementary Filter
+
+Neither accelerometer nor gyroscope alone provides reliable orientation:
+- **Accelerometer**: Accurate over long periods, but noisy and affected by motion
+- **Gyroscope**: Smooth and responsive, but drifts over time
+
+The **complementary filter** elegantly combines both sensors:
+
+**filtered_angle = α × (gyro_angle) + (1-α) × (accel_angle)**
+
+Where α is typically 0.96-0.98.
+
+### How It Works
+
+The complementary filter trusts the gyroscope for short-term changes (smooth, responsive) but slowly corrects toward the accelerometer reading over time (preventing drift). It's called "complementary" because the two sensors complement each other's weaknesses.
+
+**Short-term behavior**: The gyroscope dominates. Rapid movements are tracked accurately without the accelerometer's noise and vibration sensitivity.
+
+**Long-term behavior**: The accelerometer gradually corrects gyroscope drift. Over minutes, the estimate converges to the true orientation.
+
+:::note The Magic of Complementary Filtering
+This simple approach works remarkably well. The filter acts as a high-pass filter on gyroscope data (keeping fast changes) and a low-pass filter on accelerometer data (keeping slow, stable readings). Together, they provide orientation estimates far better than either sensor alone.
+:::
+
+## Joint Encoders
+
+While IMUs measure body orientation and motion, **encoders** measure joint positions in robot arms and mobile robot wheels. They're essential for knowing exactly where each joint is positioned.
+
+### Types of Encoders
+
+| Type | How It Works | Resolution | Absolute? |
+|------|--------------|------------|-----------|
+| **Optical Incremental** | Light passes through slotted disk | 100-10,000 pulses/rev | No |
+| **Optical Absolute** | Unique binary pattern on disk | 12-19 bit | Yes |
+| **Magnetic Incremental** | Hall effect sensors detect magnets | 50-4,000 pulses/rev | No |
+| **Magnetic Absolute** | Rotating magnet position sensing | 12-14 bit | Yes |
+
+### Incremental vs Absolute Encoders
+
+**Incremental encoders** count pulses as the shaft rotates. They're simple and affordable but have a critical limitation: they don't know their position at startup. The robot must "home" to a known position before operation.
+
+**Absolute encoders** know their exact position immediately upon power-up. Each position has a unique code, like reading a barcode. They're more expensive but eliminate homing requirements.
+
+### Quadrature Encoding
+
+Most incremental encoders use **quadrature encoding** with two signal channels (A and B) offset by 90 degrees. This provides:
+
+1. **Direction detection**: Which channel leads determines rotation direction
+2. **4× resolution**: By counting all edges on both channels, you get four times the base resolution
+3. **Noise immunity**: Both channels must change in the correct sequence to count
+
+A 1000 pulse-per-revolution encoder with quadrature decoding provides 4000 counts per revolution, giving angular resolution of 0.09 degrees.
+
+## Force and Torque Sensors
+
+Force/torque sensors measure the forces and moments (torques) acting on a robot, enabling:
+
+- **Collision detection**: Sense unexpected contact before damage occurs
+- **Compliant manipulation**: Adjust grip force based on object fragility
+- **Force control**: Apply precise forces during assembly tasks
+- **Weight measurement**: Determine what the robot is holding
+
+### 6-Axis Force/Torque Sensors
+
+The most capable sensors measure all six components:
+- **Fx, Fy, Fz**: Forces along three axes
+- **Tx, Ty, Tz**: Torques (moments) around three axes
+
+These sensors typically mount between the robot wrist and end-effector, measuring all forces and torques at the tool.
+
+### Strain Gauge Technology
+
+Most force/torque sensors use **strain gauges**—thin metallic foils that change electrical resistance when stretched or compressed. Multiple strain gauges arranged in precise patterns can distinguish between different force and torque components.
+
+## Current Sensing for Torque Estimation
+
+An indirect but practical way to estimate joint torques is through **motor current sensing**. Electric motors produce torque proportional to current, so measuring current provides torque information.
+
+**Torque ≈ Kt × Current**
+
+Where Kt is the motor's torque constant.
+
+This approach is less accurate than dedicated torque sensors but requires no additional hardware—just monitoring the motor driver. Many modern robots use current sensing for basic collision detection and compliance.
+
+## Proprioceptive Sensing in Practice
+
+### Mobile Robots
+
+Mobile robots typically combine:
+- **Wheel encoders**: Dead reckoning (odometry)
+- **IMU**: Orientation and motion detection
+- **Current sensors**: Detect wheel slip or collisions
+
+The IMU helps detect wheel slip that encoders miss—if the wheels spin but the IMU shows no acceleration, the robot is stuck.
+
+### Robot Arms
+
+Industrial robot arms use:
+- **Joint encoders**: Precise position control
+- **Force/torque sensors**: Contact detection and force control
+- **Motor current sensing**: Basic compliance and safety
+
+### Humanoid Robots
+
+Humanoids require extensive proprioception:
+- **Joint encoders**: All major joints
+- **IMU in torso**: Balance and orientation
+- **Force sensors in feet**: Ground reaction forces
+- **Force/torque sensors in wrists**: Manipulation
+
+## Key Takeaways
+
+1. **Proprioception is essential**: Robots need to sense their own state for effective control.
+
+2. **IMUs combine multiple sensors**: Accelerometers, gyroscopes, and sometimes magnetometers work together to track motion and orientation.
+
+3. **No single sensor is perfect**: Accelerometers are noisy but don't drift; gyroscopes are smooth but drift over time. Fusion is essential.
+
+4. **Complementary filters are elegant**: Simple weighted averaging of gyroscope and accelerometer data provides robust orientation estimates.
+
+5. **Encoders provide precision**: Joint position knowledge enables accurate robot control.
+
+6. **Force sensing enables interaction**: Measuring forces allows robots to interact safely and dexterously with the world.
+
+---
+
+**Next Chapter**: [Sensor Fusion and Kalman Filtering](./sensor-fusion) — We explore advanced techniques for combining multiple sensors to achieve estimates better than any single sensor alone.

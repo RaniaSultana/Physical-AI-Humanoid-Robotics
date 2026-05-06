@@ -1,0 +1,897 @@
+openapi: 3.0.3
+info:
+  title: AI Textbook Platform - Flashcard API
+  version: 1.0.0
+  description: |
+    Spaced repetition flashcard endpoints for the AI-Native Interactive Textbook Platform.
+    Implements FR-035 to FR-041 (Flashcard generation, SM-2 scheduling, reviews).
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: decks
+    description: Flashcard deck management
+  - name: flashcards
+    description: Individual flashcard operations
+  - name: reviews
+    description: Spaced repetition review sessions
+
+paths:
+  /chapters/{chapter_id}/flashcards:
+    get:
+      tags: [decks]
+      summary: Get flashcard deck for chapter
+      description: Get user's flashcard deck for a specific chapter (FR-038)
+      operationId: getChapterFlashcards
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Flashcard deck found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlashcardDeck'
+        '401':
+          description: Authentication required
+        '404':
+          description: No flashcards for this chapter
+
+    post:
+      tags: [decks]
+      summary: Generate flashcards for chapter
+      description: |
+        Generate AI-powered flashcards from chapter content (FR-035).
+        Creates 10-20 cards covering key concepts.
+      operationId: generateChapterFlashcards
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlashcardGenerationRequest'
+      responses:
+        '200':
+          description: Flashcards generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlashcardDeck'
+        '202':
+          description: Generation started (long chapters)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlashcardGenerationJob'
+        '401':
+          description: Authentication required
+        '404':
+          description: Chapter not found
+        '409':
+          description: Deck already exists (use force=true to regenerate)
+
+  /decks:
+    get:
+      tags: [decks]
+      summary: List user's flashcard decks
+      description: Get all flashcard decks for the current user
+      operationId: listFlashcardDecks
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of decks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeckList'
+        '401':
+          description: Authentication required
+
+  /decks/{deck_id}:
+    get:
+      tags: [decks]
+      summary: Get deck details
+      description: Get a specific flashcard deck with all cards
+      operationId: getFlashcardDeck
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deck_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Deck details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlashcardDeck'
+        '401':
+          description: Authentication required
+        '404':
+          description: Deck not found
+
+    delete:
+      tags: [decks]
+      summary: Delete flashcard deck
+      description: Delete a flashcard deck and all its cards
+      operationId: deleteFlashcardDeck
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deck_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deck deleted
+        '401':
+          description: Authentication required
+        '404':
+          description: Deck not found
+
+  /decks/{deck_id}/flashcards:
+    post:
+      tags: [flashcards]
+      summary: Add custom flashcard
+      description: Add a user-created flashcard to the deck
+      operationId: addFlashcard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deck_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlashcardCreateRequest'
+      responses:
+        '201':
+          description: Flashcard created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flashcard'
+        '401':
+          description: Authentication required
+        '404':
+          description: Deck not found
+
+  /flashcards/{flashcard_id}:
+    get:
+      tags: [flashcards]
+      summary: Get flashcard details
+      description: Get a specific flashcard with review history
+      operationId: getFlashcard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: flashcard_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Flashcard details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlashcardDetail'
+        '401':
+          description: Authentication required
+        '404':
+          description: Flashcard not found
+
+    patch:
+      tags: [flashcards]
+      summary: Update flashcard
+      description: Update flashcard front/back content
+      operationId: updateFlashcard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: flashcard_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlashcardUpdateRequest'
+      responses:
+        '200':
+          description: Flashcard updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flashcard'
+        '401':
+          description: Authentication required
+        '404':
+          description: Flashcard not found
+
+    delete:
+      tags: [flashcards]
+      summary: Delete flashcard
+      description: Delete a specific flashcard
+      operationId: deleteFlashcard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: flashcard_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Flashcard deleted
+        '401':
+          description: Authentication required
+        '404':
+          description: Flashcard not found
+
+  /reviews/due:
+    get:
+      tags: [reviews]
+      summary: Get due flashcards
+      description: |
+        Get all flashcards due for review based on SM-2 scheduling (FR-036).
+        Returns cards whose next_review_date <= now.
+      operationId: getDueFlashcards
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deck_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by specific deck (optional)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Maximum cards to return
+      responses:
+        '200':
+          description: Due flashcards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DueFlashcards'
+        '401':
+          description: Authentication required
+
+  /reviews/session:
+    post:
+      tags: [reviews]
+      summary: Start review session
+      description: Start a new spaced repetition review session
+      operationId: startReviewSession
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewSessionRequest'
+      responses:
+        '201':
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewSession'
+        '401':
+          description: Authentication required
+
+  /reviews/session/{session_id}:
+    get:
+      tags: [reviews]
+      summary: Get session status
+      description: Get current status of a review session
+      operationId: getReviewSession
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewSession'
+        '401':
+          description: Authentication required
+        '404':
+          description: Session not found
+
+  /reviews/session/{session_id}/review:
+    post:
+      tags: [reviews]
+      summary: Submit card review
+      description: |
+        Submit quality rating for a flashcard review (FR-037).
+        Uses SM-2 algorithm to calculate next review interval.
+        Quality: 0-2 = fail (reset), 3 = hard, 4 = good, 5 = easy
+      operationId: submitCardReview
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardReviewSubmission'
+      responses:
+        '200':
+          description: Review recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardReviewResult'
+        '400':
+          description: Invalid quality rating or card not in session
+        '401':
+          description: Authentication required
+        '404':
+          description: Session not found
+
+  /reviews/session/{session_id}/complete:
+    post:
+      tags: [reviews]
+      summary: Complete review session
+      description: Mark the review session as complete
+      operationId: completeReviewSession
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewSessionSummary'
+        '401':
+          description: Authentication required
+        '404':
+          description: Session not found
+
+  /reviews/stats:
+    get:
+      tags: [reviews]
+      summary: Get review statistics
+      description: Get user's flashcard review statistics (FR-039)
+      operationId: getReviewStats
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deck_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by specific deck (optional)
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d, all]
+            default: 30d
+          description: Time period for statistics
+      responses:
+        '200':
+          description: Review statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewStats'
+        '401':
+          description: Authentication required
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    FlashcardGenerationRequest:
+      type: object
+      properties:
+        card_count:
+          type: integer
+          minimum: 5
+          maximum: 30
+          default: 15
+          description: Number of flashcards to generate
+        difficulty:
+          type: string
+          enum: [easy, medium, hard, mixed]
+          default: mixed
+        force:
+          type: boolean
+          default: false
+          description: Regenerate even if deck exists
+
+    FlashcardDeck:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        chapter_id:
+          type: string
+          format: uuid
+        chapter_title:
+          type: string
+        user_id:
+          type: string
+          format: uuid
+        flashcards:
+          type: array
+          items:
+            $ref: '#/components/schemas/Flashcard'
+        card_count:
+          type: integer
+        due_count:
+          type: integer
+          description: Number of cards due for review
+        mastered_count:
+          type: integer
+          description: Cards with interval > 21 days
+        model_used:
+          type: string
+          nullable: true
+          description: AI model used for generation (null for user-created)
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Flashcard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        deck_id:
+          type: string
+          format: uuid
+        front:
+          type: string
+          description: Question or prompt
+        back:
+          type: string
+          description: Answer or explanation
+        source:
+          type: string
+          enum: [ai_generated, user_created]
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        # SM-2 algorithm fields
+        easiness_factor:
+          type: number
+          format: float
+          minimum: 1.3
+          default: 2.5
+          description: SM-2 easiness factor (EF)
+        interval:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Current interval in days
+        repetitions:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Number of successful reviews
+        next_review_date:
+          type: string
+          format: date-time
+          description: When card is due for review
+        created_at:
+          type: string
+          format: date-time
+
+    FlashcardDetail:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Flashcard'
+        - type: object
+          properties:
+            review_history:
+              type: array
+              items:
+                $ref: '#/components/schemas/ReviewRecord'
+              description: Recent review history for this card
+
+    FlashcardCreateRequest:
+      type: object
+      required:
+        - front
+        - back
+      properties:
+        front:
+          type: string
+          minLength: 1
+          maxLength: 500
+        back:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+          default: medium
+
+    FlashcardUpdateRequest:
+      type: object
+      properties:
+        front:
+          type: string
+          minLength: 1
+          maxLength: 500
+        back:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+
+    FlashcardGenerationJob:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        chapter_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        progress:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        cards_generated:
+          type: integer
+        cards_total:
+          type: integer
+        error_message:
+          type: string
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    DeckList:
+      type: object
+      properties:
+        decks:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              chapter_id:
+                type: string
+                format: uuid
+              chapter_title:
+                type: string
+              card_count:
+                type: integer
+              due_count:
+                type: integer
+              mastered_count:
+                type: integer
+              created_at:
+                type: string
+                format: date-time
+        pagination:
+          type: object
+          properties:
+            limit:
+              type: integer
+            offset:
+              type: integer
+            total:
+              type: integer
+
+    DueFlashcards:
+      type: object
+      properties:
+        total_due:
+          type: integer
+        flashcards:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              deck_id:
+                type: string
+                format: uuid
+              chapter_title:
+                type: string
+              front:
+                type: string
+              back:
+                type: string
+              difficulty:
+                type: string
+              overdue_days:
+                type: integer
+                description: Days past due date (0 if due today)
+
+    ReviewSessionRequest:
+      type: object
+      properties:
+        deck_id:
+          type: string
+          format: uuid
+          description: Review specific deck (optional)
+        card_limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          description: Maximum cards in session
+
+    ReviewSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        deck_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum: [in_progress, completed, abandoned]
+        cards_total:
+          type: integer
+        cards_reviewed:
+          type: integer
+        cards_remaining:
+          type: integer
+        current_card:
+          $ref: '#/components/schemas/Flashcard'
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+
+    CardReviewSubmission:
+      type: object
+      required:
+        - flashcard_id
+        - quality
+      properties:
+        flashcard_id:
+          type: string
+          format: uuid
+        quality:
+          type: integer
+          minimum: 0
+          maximum: 5
+          description: |
+            SM-2 quality rating:
+            0 - Complete blackout
+            1 - Incorrect, but upon seeing answer it felt familiar
+            2 - Incorrect, but answer easy to recall after seeing it
+            3 - Correct with serious difficulty
+            4 - Correct after hesitation
+            5 - Perfect response
+        response_time_ms:
+          type: integer
+          description: Time taken to respond (optional, for analytics)
+
+    CardReviewResult:
+      type: object
+      properties:
+        flashcard_id:
+          type: string
+          format: uuid
+        quality:
+          type: integer
+        passed:
+          type: boolean
+          description: Whether quality >= 3 (passed)
+        new_interval:
+          type: integer
+          description: New interval in days
+        new_easiness_factor:
+          type: number
+          format: float
+        next_review_date:
+          type: string
+          format: date-time
+        cards_remaining:
+          type: integer
+
+    ReviewRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        quality:
+          type: integer
+        interval_before:
+          type: integer
+        interval_after:
+          type: integer
+        reviewed_at:
+          type: string
+          format: date-time
+
+    ReviewSessionSummary:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        cards_reviewed:
+          type: integer
+        cards_passed:
+          type: integer
+        cards_failed:
+          type: integer
+        average_quality:
+          type: number
+          format: float
+        time_spent_seconds:
+          type: integer
+        completed_at:
+          type: string
+          format: date-time
+
+    ReviewStats:
+      type: object
+      properties:
+        period:
+          type: string
+        total_reviews:
+          type: integer
+        total_cards:
+          type: integer
+        cards_mastered:
+          type: integer
+          description: Cards with interval > 21 days
+        cards_learning:
+          type: integer
+          description: Cards with interval 1-21 days
+        cards_new:
+          type: integer
+          description: Cards never reviewed
+        average_retention:
+          type: number
+          format: float
+          description: Percentage of successful reviews
+        streak_days:
+          type: integer
+          description: Consecutive days with reviews
+        reviews_by_day:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              reviews:
+                type: integer
+              passed:
+                type: integer
+        due_forecast:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              due_count:
+                type: integer
+          description: Cards due in next 7 days
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

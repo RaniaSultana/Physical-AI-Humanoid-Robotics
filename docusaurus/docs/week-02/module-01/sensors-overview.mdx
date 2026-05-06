@@ -1,0 +1,328 @@
+---
+sidebar_position: 1
+title: Robot Sensors Overview
+description: Understanding how robots perceive the world through various sensing technologies
+---
+
+# Robot Sensors Overview
+
+Humans experience the world through five senses—sight, hearing, touch, taste, and smell. Robots have their own senses, implemented through electronic and mechanical sensors. These sensors are the foundation of all robot perception, enabling machines to detect obstacles, recognize objects, measure their own movements, and interact safely with their environment.
+
+In this chapter, we'll survey the major categories of robot sensors, understand their underlying principles, and learn what makes each type suitable for different applications.
+
+## Why Sensors Matter
+
+Consider trying to walk across a room with your eyes closed and ears plugged. You might manage if you knew the layout perfectly and nothing had moved. But introduce any uncertainty—a chair out of place, a pet underfoot, someone opening a door—and the task becomes dangerous.
+
+Robots face this situation constantly. Without sensors, a robot is essentially blind, operating purely from predetermined instructions with no ability to adapt to reality. Sensors provide the feedback that makes intelligent behavior possible.
+
+The fundamental loop of robotics is:
+1. **Sense** the environment
+2. **Process** the sensory information
+3. **Act** based on that processing
+4. **Repeat** continuously
+
+Sensors close this loop, connecting a robot's actions back to reality.
+
+## Two Categories of Sensing
+
+Robot sensors divide into two fundamental categories based on what they measure:
+
+### Proprioceptive Sensors: Self-Perception
+
+**Proprioception** means sensing one's own body. In humans, proprioceptive sensors in muscles and joints tell us our limb positions even with eyes closed. You can touch your nose in the dark because proprioception tells you where your arm is.
+
+Robot proprioceptive sensors measure internal state:
+- Joint angles (where are the limbs?)
+- Joint velocities (how fast are they moving?)
+- Motor currents (how much force is being applied?)
+- Internal temperatures (is anything overheating?)
+- Battery levels (how much energy remains?)
+
+Without proprioception, a robot couldn't control its own movements accurately. Imagine trying to reach for a cup if you couldn't feel where your hand was—you'd have to watch it constantly.
+
+### Exteroceptive Sensors: World Perception
+
+**Exteroception** means sensing the external environment. These sensors tell the robot what's happening outside its body:
+- What objects are nearby?
+- How far away are obstacles?
+- What does the terrain look like?
+- Is someone approaching?
+- What is the temperature of that surface?
+
+Exteroceptive sensors are what most people think of as robot senses—cameras, distance sensors, microphones. They provide the information needed for navigation, manipulation, and interaction.
+
+## Joint Position Sensing: Encoders
+
+The most fundamental proprioceptive sensor is the **encoder**, which measures the rotation of a motor shaft or joint.
+
+### How Encoders Work
+
+Optical encoders use a disk with a pattern of transparent and opaque sections. Light shines through the disk onto a sensor. As the disk rotates, the pattern of light and dark creates electrical pulses that can be counted.
+
+If the disk has 1000 slots, then 1000 pulses means one full rotation. Count 500 pulses? That's half a rotation, or 180 degrees.
+
+**Quadrature Encoding** uses two sensors slightly offset from each other. By comparing which sensor triggers first, the encoder can determine direction of rotation—not just how much, but which way.
+
+### Resolution and Precision
+
+Encoder **resolution** is specified as counts per revolution (CPR). Higher resolution means finer position measurement:
+
+| Resolution | Position Precision |
+|------------|-------------------|
+| 100 CPR | 3.6 degrees |
+| 1,000 CPR | 0.36 degrees |
+| 10,000 CPR | 0.036 degrees |
+| 100,000 CPR | 0.0036 degrees |
+
+Industrial robots often use encoders with tens of thousands of counts per revolution, enabling positioning precision measured in hundredths of millimeters.
+
+### Absolute vs. Incremental
+
+**Incremental encoders** count pulses from a starting point. When power is lost, the count resets to zero—the robot doesn't know where it is until it finds a reference position (called "homing").
+
+**Absolute encoders** encode the actual position in the pattern itself. Even after power loss, they immediately know the exact position. This is important for safety-critical applications where losing position could be dangerous.
+
+## Motion Sensing: IMUs
+
+An **Inertial Measurement Unit (IMU)** combines accelerometers and gyroscopes to measure motion without external references.
+
+### Accelerometers
+
+Accelerometers measure acceleration—the rate of change of velocity. Conceptually, imagine a weight on a spring inside a small box. When the box accelerates, the weight lags behind, stretching the spring. By measuring this stretch, we infer the acceleration.
+
+Modern MEMS (microelectromechanical systems) accelerometers are tiny silicon structures that bend under acceleration, changing their electrical properties. A smartphone typically contains a three-axis accelerometer measuring acceleration in all directions.
+
+**What Accelerometers Tell Us:**
+- Linear acceleration in each direction
+- Tilt angle (by measuring gravity's direction)
+- Vibration and shock
+- Freefall detection (acceleration suddenly goes to zero)
+
+### Gyroscopes
+
+Gyroscopes measure angular velocity—how fast something is rotating. The classic mechanical gyroscope uses a spinning wheel that resists changes to its rotation axis. Modern MEMS gyroscopes use vibrating structures whose motion changes predictably when rotated.
+
+**What Gyroscopes Tell Us:**
+- Rotation rate around each axis
+- Changes in orientation
+- Rotational oscillations
+
+### Combining Into an IMU
+
+Together, accelerometers and gyroscopes provide a complete picture of motion:
+- Accelerometers: "We're accelerating forward at 2 m/s²"
+- Gyroscopes: "We're also rotating left at 15 degrees per second"
+
+This combination is essential for:
+- Balance (humanoid robots, drones)
+- Navigation (tracking position through integration)
+- Stabilization (camera gimbals, vehicle control)
+
+### The Integration Problem
+
+A significant challenge with IMUs is **drift**. To get velocity from acceleration, you integrate over time. To get position from velocity, you integrate again. Small errors in acceleration measurement accumulate with each integration.
+
+An accelerometer with 0.01 m/s² error will show velocity drift of 0.6 m/s after one minute, and position drift of 18 meters. After five minutes, the position error would be hundreds of meters.
+
+This is why IMUs alone aren't sufficient for navigation—they must be combined with other sensors that provide absolute reference points.
+
+## Force and Torque Sensing
+
+Force/Torque (F/T) sensors measure the forces and moments applied to a robot, typically at the wrist (between arm and gripper) or at the base.
+
+### Why Force Sensing Matters
+
+Pure position control isn't enough for many tasks. Consider inserting a peg into a hole:
+- Position control alone: Push toward the target position. If slightly misaligned, the robot pushes harder and harder until something breaks.
+- Force-controlled: Feel the contact forces. If the peg catches on the edge, detect the force and adjust alignment.
+
+Force sensing enables:
+- **Compliant manipulation**: Gently handling fragile objects
+- **Contact detection**: Knowing when the gripper touches something
+- **Assembly tasks**: Fitting parts together despite small misalignments
+- **Safety**: Detecting unexpected collisions
+
+### Strain Gauge Technology
+
+Most F/T sensors use **strain gauges**—thin metal foils whose electrical resistance changes when stretched. By mounting strain gauges on a carefully designed structure, deformation from applied forces creates measurable resistance changes.
+
+A typical six-axis F/T sensor measures:
+- Three force components (Fx, Fy, Fz)
+- Three torque components (Tx, Ty, Tz)
+
+This gives complete information about how the environment is pushing and twisting the robot at that point.
+
+## Vision: Camera Fundamentals
+
+We'll cover cameras in detail in the next chapter, but here we introduce basic concepts.
+
+Cameras are the most information-rich sensors available to robots. A single image might contain millions of pixels, each encoding color or intensity. This density of information enables object recognition, navigation, and manipulation planning.
+
+### The Trade-offs of Vision
+
+Vision provides rich information but with significant challenges:
+- **Computation**: Processing millions of pixels per frame is computationally expensive
+- **Lighting dependence**: Cameras fail in darkness and perform poorly in varying light
+- **Texture requirements**: Most vision algorithms struggle with uniform, textureless surfaces
+- **Depth ambiguity**: A single camera image loses depth information
+
+Despite these challenges, advances in deep learning have made camera-based perception increasingly capable, often matching or exceeding human performance in specific tasks.
+
+## Range Sensing: Distance Measurement
+
+Range sensors measure distances to surfaces, providing direct geometric information about the environment.
+
+### Ultrasonic Sensors
+
+Ultrasonic sensors emit high-frequency sound pulses and measure the time until echoes return. Knowing the speed of sound, distance is calculated:
+
+**Distance = (Speed of Sound × Time) / 2**
+
+The factor of 2 accounts for the round trip—sound travels to the object and back.
+
+**Characteristics:**
+- Range: Typically 2 cm to 5 meters
+- Beam width: Wide (15-30 degrees), poor at distinguishing close objects
+- Best for: Simple obstacle detection, parking sensors, liquid level measurement
+- Limitations: Affected by temperature, fails on soft or angled surfaces that don't reflect sound well
+
+### Infrared Proximity Sensors
+
+Infrared (IR) proximity sensors emit infrared light and measure how much reflects back. More reflection typically means a closer object.
+
+**Characteristics:**
+- Range: Usually a few centimeters to a meter
+- Fast response (thousands of readings per second)
+- Best for: Edge detection, object presence sensing, line following
+- Limitations: Affected by surface color and reflectivity, sunlight interference
+
+### Time-of-Flight Sensors
+
+Time-of-Flight (ToF) sensors precisely measure the time for light to travel to an object and back. Since light travels at 300,000 km/s, this requires extremely precise timing—but modern electronics make it practical.
+
+**Characteristics:**
+- Range: Several meters
+- Can provide full depth images (ToF cameras)
+- Best for: Gesture recognition, indoor mapping, robot navigation
+- Limitations: Limited range outdoors due to sunlight, lower resolution than regular cameras
+
+### LiDAR
+
+Light Detection and Ranging (LiDAR) uses laser pulses to measure distances with high precision. A scanning mechanism sweeps the laser across the environment, building up a detailed 3D point cloud.
+
+We'll cover LiDAR in depth in a later chapter, but key characteristics include:
+- Extremely precise (millimeter accuracy)
+- Long range (up to hundreds of meters)
+- Works in darkness
+- Less affected by surface texture than cameras
+- More expensive than other range sensors
+
+## Touch and Tactile Sensing
+
+Tactile sensors give robots a sense of touch, measuring pressure, contact, and surface properties.
+
+### Simple Contact Switches
+
+The simplest tactile sensors are binary switches—pressed or not pressed. Robot vacuum bumpers use contact switches to detect collisions. Though simple, they're reliable and useful for triggering immediate responses.
+
+### Pressure Sensors
+
+Pressure sensors measure the magnitude of contact force, not just its presence. Technologies include:
+- **Force-sensitive resistors (FSRs)**: Change resistance under pressure
+- **Capacitive sensors**: Change capacitance under pressure
+- **Piezoelectric sensors**: Generate voltage proportional to pressure changes
+
+### Tactile Arrays
+
+For manipulation, robots benefit from knowing not just total force but the distribution of pressure across a surface—like the skin on your fingertips.
+
+Tactile arrays place many small sensors in a grid, providing a "pressure image" of contact. This enables:
+- Detecting object shape through touch
+- Recognizing slip (the object is sliding out of the grasp)
+- Adjusting grip force for different objects
+- Detecting surface texture
+
+### The Challenges of Tactile Sensing
+
+Human skin has about 17,000 touch sensors per hand, with extremely high spatial resolution in fingertips. Robot tactile sensing is far from matching this:
+- Density: Robot tactile arrays typically have tens to hundreds of points, not thousands
+- Durability: Soft tactile surfaces wear out
+- Wiring: Each sensor needs electrical connections
+- Cost: High-resolution tactile sensors are expensive
+
+This remains an active research area, as tactile feedback is crucial for dexterous manipulation.
+
+## Sensor Characteristics: What to Consider
+
+When selecting sensors for a robot, engineers evaluate several key characteristics:
+
+### Accuracy and Precision
+
+**Accuracy** is how close measurements are to the true value. **Precision** is how repeatable measurements are.
+
+A sensor can be:
+- Accurate and precise: Measurements clustered around the true value (ideal)
+- Accurate but imprecise: Measurements scattered around the true value (average is right, individual measurements vary)
+- Precise but inaccurate: Measurements clustered but consistently wrong (systematic error, might be correctable)
+- Neither: Measurements scattered and wrong on average (poor sensor)
+
+### Range and Resolution
+
+**Range** is the span of values a sensor can measure (e.g., 0-10 meters). **Resolution** is the smallest change it can detect (e.g., 1 millimeter).
+
+### Bandwidth and Latency
+
+**Bandwidth** is how fast a sensor can provide new data. **Latency** is the delay between physical change and sensor output.
+
+For fast movements, high bandwidth is essential. For real-time control, low latency is critical—a sensor that reports what happened 100 milliseconds ago is too slow for catching a thrown ball.
+
+### Noise and Drift
+
+All sensors have **noise**—random variations in output. **Drift** is slow changes in sensor characteristics over time.
+
+Good system design accounts for these imperfections through filtering, calibration, and sensor fusion.
+
+## Sensor Fusion: Combining Information
+
+Real robots don't rely on single sensors. They combine information from multiple sensors to overcome individual limitations—a process called **sensor fusion**.
+
+Consider navigation:
+- IMU: Fast updates but drifts over time
+- GPS: No drift but slow updates and occasional dropouts
+- Camera: Rich information but computationally expensive
+- Wheel encoders: Reliable but accumulates error (wheels slip)
+
+By combining these sensors intelligently, a robot achieves better estimates than any single sensor could provide. The Kalman filter, which we'll cover later, is the classic algorithm for optimal sensor fusion.
+
+## Key Takeaways
+
+1. **Proprioceptive sensors** measure the robot's internal state (joint positions, velocities, forces), while **exteroceptive sensors** measure the external environment.
+
+2. **Encoders** measure rotation and are fundamental for controlling motor positions.
+
+3. **IMUs** combine accelerometers and gyroscopes for motion sensing, but suffer from integration drift.
+
+4. **Force/torque sensors** enable compliant manipulation and safe interaction.
+
+5. **Vision** provides rich information but requires significant computation.
+
+6. **Range sensors** (ultrasonic, IR, ToF, LiDAR) directly measure distances.
+
+7. **Tactile sensors** provide touch information crucial for manipulation.
+
+8. **Sensor selection** depends on accuracy, precision, range, resolution, bandwidth, and cost.
+
+9. **Sensor fusion** combines multiple sensors to overcome individual limitations.
+
+---
+
+:::tip Reflection
+Think about a robot vacuum cleaner. What sensors might it use for:
+- Avoiding walls and furniture?
+- Detecting stairs?
+- Knowing where it has already cleaned?
+- Finding its charging dock?
+:::
+
+**Next Chapter**: [Camera Systems](/docs/week-02/module-01/camera-systems) — We dive deep into visual sensing, from basic camera principles to depth perception and computer vision fundamentals.

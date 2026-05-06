@@ -1,0 +1,293 @@
+---
+sidebar_position: 1
+title: Machine Learning for Robotics
+description: Introduction to machine learning techniques used in modern robotics
+---
+
+# Machine Learning for Robotics
+
+Machine learning has revolutionized robotics, enabling robots to learn from data rather than being explicitly programmed. Instead of writing rules for every situation, we can show robots examples and let them learn patterns. This chapter introduces the key ML concepts and techniques most relevant to modern robotics.
+
+## Why Machine Learning in Robotics?
+
+Traditional robotics relies on hand-crafted algorithms and explicit rules. This works well for structured environments but struggles with:
+
+- **Complex perception**: Recognizing objects in cluttered, varying scenes
+- **Unstructured environments**: Navigating spaces that weren't pre-mapped
+- **Adaptability**: Adjusting to new situations without reprogramming
+- **Natural interaction**: Understanding human intent from speech and gestures
+
+:::tip The ML Advantage
+Machine learning allows robots to generalize from examples rather than requiring explicit rules for every situation. A robot can learn to recognize thousands of objects by seeing examples, rather than someone writing recognition code for each one.
+:::
+
+## Types of Machine Learning
+
+### Supervised Learning
+
+**Supervised learning** learns from labeled examples—input-output pairs where we know the correct answer.
+
+**How it works:**
+1. Collect training data: inputs paired with correct outputs
+2. Train a model to predict outputs from inputs
+3. Test on new data to verify generalization
+4. Deploy the model
+
+**Examples in robotics:**
+- **Object classification**: Images → object labels ("this is a cup")
+- **Grasp prediction**: Object point cloud → best grasp pose
+- **Collision prediction**: Robot state → will this motion collide?
+- **Motor calibration**: Desired velocity → required voltage
+
+**Key considerations:**
+- Need labeled training data (can be expensive to obtain)
+- Model can only learn patterns present in training data
+- Performance depends heavily on data quality and quantity
+
+### Unsupervised Learning
+
+**Unsupervised learning** finds patterns in unlabeled data—no "correct answers" provided.
+
+**Common techniques:**
+
+**Clustering:** Group similar data points together
+- Segment point clouds into separate objects
+- Identify types of terrain from sensor data
+- Group similar robot states or behaviors
+
+**Dimensionality reduction:** Find compact representations
+- Compress high-dimensional sensor data
+- Extract meaningful features from raw inputs
+- Visualize complex robot behavior
+
+**Anomaly detection:** Identify unusual patterns
+- Detect sensor failures
+- Identify unexpected obstacles or situations
+- Monitor robot health
+
+### Reinforcement Learning
+
+**Reinforcement learning (RL)** learns by trial and error—the robot takes actions, receives rewards or penalties, and improves its strategy.
+
+**Key concepts:**
+- **Agent**: The learner (the robot)
+- **Environment**: The world the robot interacts with
+- **State**: Current situation (sensor readings, positions)
+- **Action**: What the robot can do
+- **Reward**: Feedback signal (positive = good, negative = bad)
+- **Policy**: Strategy for choosing actions given states
+
+**How it works:**
+1. Robot takes an action in current state
+2. Environment transitions to new state
+3. Robot receives reward signal
+4. Robot updates policy to increase expected future rewards
+5. Repeat millions of times
+
+**Advantages:**
+- No need for labeled training data
+- Can discover novel strategies humans wouldn't design
+- Handles sequential decision-making naturally
+
+**Challenges:**
+- Requires many trials (sample inefficiency)
+- Reward design is difficult and crucial
+- Safety during learning is a concern
+
+## Neural Networks in Robotics
+
+### Why Neural Networks?
+
+Neural networks are universal function approximators—given enough capacity and data, they can learn virtually any mapping from inputs to outputs. This flexibility makes them powerful for robotics:
+
+- **Raw sensor inputs**: Can process images, point clouds, audio directly
+- **Complex patterns**: Can learn non-linear relationships
+- **End-to-end learning**: Can learn entire processing pipelines
+
+### Convolutional Neural Networks (CNNs)
+
+**CNNs** are designed for image and spatial data processing. They learn hierarchical features automatically.
+
+**Key properties:**
+- **Local connectivity**: Each neuron connects to a small region of the input
+- **Weight sharing**: Same filter applied across the entire image
+- **Translation invariance**: Can recognize objects regardless of position
+
+**Robotics applications:**
+- Object detection and recognition
+- Semantic segmentation (labeling every pixel)
+- Depth estimation from single images
+- Visual navigation and obstacle detection
+- Grasp point detection
+
+**Popular architectures:**
+| Architecture | Use Case | Speed |
+|--------------|----------|-------|
+| ResNet | General-purpose, accurate | Medium |
+| EfficientNet | Mobile and embedded | Fast |
+| YOLO | Real-time detection | Very fast |
+| U-Net | Segmentation | Medium |
+
+### Recurrent Neural Networks (RNNs)
+
+**RNNs** process sequential data by maintaining memory of past inputs.
+
+**Key variants:**
+- **LSTM (Long Short-Term Memory)**: Handles long-term dependencies
+- **GRU (Gated Recurrent Unit)**: Simpler, often similar performance
+
+**Robotics applications:**
+- Time series prediction (trajectory forecasting)
+- Sequential decision making
+- Processing sensor streams over time
+- Natural language understanding for robot commands
+
+### Transformers
+
+**Transformers** use attention mechanisms to process sequences, now dominant in many domains.
+
+**Key properties:**
+- **Self-attention**: Each element can attend to all others
+- **Parallel processing**: Faster training than RNNs
+- **Long-range dependencies**: Handle relationships across long sequences
+
+**Robotics applications:**
+- Language-conditioned robot control
+- Multi-modal perception (vision + language)
+- Decision-making over long horizons
+- Foundation models for robotics
+
+## Imitation Learning
+
+**Imitation learning** teaches robots by demonstration rather than trial and error.
+
+### Behavioral Cloning
+
+The simplest approach: treat demonstrations as supervised learning.
+
+**Process:**
+1. Expert demonstrates the task (human teleoperation)
+2. Record (state, action) pairs
+3. Train neural network to predict actions from states
+4. Deploy learned policy
+
+**Advantages:**
+- Simple and fast to implement
+- No reward function needed
+- Can learn complex behaviors quickly
+
+**Limitations:**
+- Distribution shift: Small errors compound over time
+- Can only be as good as the demonstrator
+- Requires many demonstrations for complex tasks
+
+### More Advanced Approaches
+
+**DAgger (Dataset Aggregation):** Iteratively collect data where the learned policy makes mistakes, then retrain.
+
+**Inverse Reinforcement Learning:** Learn the reward function from demonstrations, then use RL to optimize it.
+
+**Generative Adversarial Imitation Learning:** Use adversarial training to match expert behavior distribution.
+
+## End-to-End Learning
+
+**End-to-end learning** trains a single model from raw inputs (images, sensors) directly to outputs (motor commands), without hand-designed intermediate representations.
+
+### Example: Vision-Based Driving
+
+Traditional approach:
+1. Process image → detect lanes → estimate position → compute steering
+
+End-to-end approach:
+1. Process image → steering angle (one neural network)
+
+**Advantages:**
+- No hand-designed features or intermediate stages
+- Can learn task-specific representations
+- Often achieves better performance
+
+**Disadvantages:**
+- Requires large amounts of training data
+- Harder to interpret and debug
+- May not generalize to new scenarios
+
+## Practical Considerations
+
+### Data Collection for Robots
+
+Getting training data is often the hardest part of ML in robotics:
+
+**Teleoperation:** Human controls robot, record data
+- Natural behaviors, immediate availability
+- Slow, limited by human skill
+
+**Simulation:** Generate data in virtual environments
+- Fast, unlimited data, safe
+- Sim-to-real gap: models may not transfer
+
+**Autonomous collection:** Robot explores and collects data
+- Scalable, discovers novel situations
+- Requires exploration strategy, safety concerns
+
+**Data augmentation:** Artificially expand dataset
+- Geometric transforms (rotation, translation)
+- Color and lighting variations
+- Noise injection
+
+### Training Tips
+
+**Start simple:**
+- Small networks, simple tasks first
+- Scale up once basics work
+- Verify learning is happening before adding complexity
+
+**Normalize inputs:**
+- Zero mean, unit variance
+- Consistent across training and deployment
+- Essential for stable training
+
+**Monitor training:**
+- Plot loss curves, watch for divergence
+- Visualize learned behaviors regularly
+- Test on held-out validation data
+
+**Iterate quickly:**
+- Fast experiments beat long, careful ones
+- Find what doesn't work quickly
+- Build intuition through experimentation
+
+### Common Pitfalls
+
+**Overfitting:** Model memorizes training data, fails on new data
+- Solution: More data, simpler models, regularization
+
+**Distribution shift:** Training data differs from deployment conditions
+- Solution: Diverse training data, domain adaptation
+
+**Reward hacking:** RL finds unexpected ways to maximize reward
+- Solution: Careful reward design, constraint-based objectives
+
+**Covariate shift:** Small errors lead to states not seen in training
+- Solution: Data augmentation, robust training procedures
+
+## Key Takeaways
+
+1. **ML enables learning from data** rather than explicit programming—essential for complex perception and adaptability.
+
+2. **Supervised learning** requires labeled examples but is well-understood and widely applicable.
+
+3. **Reinforcement learning** learns from interaction but requires many trials and careful reward design.
+
+4. **Neural networks** are powerful function approximators that can process raw sensor data.
+
+5. **CNNs excel at visual perception**, RNNs at temporal sequences, Transformers at flexible attention.
+
+6. **Imitation learning** provides a simpler alternative to RL when demonstrations are available.
+
+7. **Data collection is often the bottleneck**—strategies include teleoperation, simulation, and augmentation.
+
+8. **Start simple, iterate quickly**, and validate that learning is happening before scaling up.
+
+---
+
+**Next Chapter**: [Deep Reinforcement Learning for Robotics](/week-05/module-01/deep-rl-robotics) — We dive deeper into reinforcement learning techniques that enable robots to learn complex behaviors through interaction with their environment.

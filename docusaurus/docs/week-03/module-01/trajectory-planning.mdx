@@ -1,0 +1,302 @@
+---
+sidebar_position: 2
+title: Trajectory Planning and Motion Control
+description: Planning smooth robot movements and executing motion profiles
+---
+
+# Trajectory Planning and Motion Control
+
+Moving a robot from point A to point B seems simple, but doing it smoothly, efficiently, and safely requires careful planning. A jerky, abrupt motion can damage mechanisms, disturb payloads, and create safety hazards. A well-planned trajectory moves the robot gracefully while respecting physical limits.
+
+This chapter explores trajectory planning—the art of specifying not just where a robot should go, but how it should get there.
+
+## What is a Trajectory?
+
+A **trajectory** is more than just a path. While a path specifies the geometric route through space (a sequence of positions), a trajectory adds the dimension of time:
+
+| Concept | What It Specifies | Example |
+|---------|-------------------|---------|
+| **Path** | Geometric route | "Go through points A, B, C" |
+| **Trajectory** | Path + timing | "Be at A at t=0, B at t=2s, C at t=4s" |
+
+A complete trajectory specification includes:
+- **Position**: Where to be at each moment
+- **Velocity**: How fast to move at each point
+- **Acceleration**: How quickly to change speed
+- **Sometimes jerk**: Rate of acceleration change
+
+:::tip Why Timing Matters
+Two robots following the same path can behave very differently. One might creep slowly, another might race and stop abruptly. The trajectory determines the motion character, not just the route.
+:::
+
+## Motion Profiles: The Heart of Trajectory Planning
+
+### Why Motion Profiles Matter
+
+Imagine commanding a motor to instantly change from zero to maximum speed. Several bad things happen:
+
+- **Mechanical stress**: Gears, belts, and structures experience shock loads
+- **Positioning errors**: Inertia causes overshoot and vibration
+- **Energy waste**: Sharp accelerations draw peak currents
+- **Safety issues**: Unpredictable, jarring movements
+
+**Smooth motion requires smooth acceleration.** This principle guides all motion profile design.
+
+### The Trapezoidal Velocity Profile
+
+The most common motion profile is the **trapezoidal profile**, named for its velocity-versus-time shape:
+
+```
+Velocity
+    │      ┌─────────────┐
+    │     /               \
+    │    /                 \
+    │   /                   \
+    │  /                     \
+    └──────────────────────────▶ Time
+     Accel   Cruise   Decel
+```
+
+The motion proceeds in three phases:
+
+1. **Acceleration phase**: Velocity ramps up at constant acceleration until reaching cruise speed
+2. **Cruise phase**: Velocity holds constant at maximum speed
+3. **Deceleration phase**: Velocity ramps down to zero at the target
+
+**Key parameters:**
+- **Maximum velocity (v_max)**: The cruise speed
+- **Maximum acceleration (a_max)**: How quickly to speed up and slow down
+- **Distance**: The total travel distance (determines phase durations)
+
+### When Trapezoidal Profiles Become Triangular
+
+For short distances, the robot might not have room to reach maximum velocity before it needs to decelerate. In this case, the profile becomes triangular—accelerating directly into deceleration with no cruise phase.
+
+The crossover distance where this happens:
+
+**d_crossover = v_max² / a_max**
+
+Below this distance, you can't achieve maximum velocity.
+
+### S-Curve Profiles: Even Smoother Motion
+
+Trapezoidal profiles have a problem: acceleration changes instantaneously at phase transitions. This creates **infinite jerk** (rate of acceleration change), which still causes mechanical shock.
+
+**S-curve profiles** limit jerk by smoothly ramping acceleration up and down:
+
+```
+Acceleration
+    │    ╭──────╮
+    │   /        \
+    │  /          \
+    │ /            \
+    │/              \
+    ├────────────────────▶ Time
+    │               \
+    │                \
+    │                 ╰────
+```
+
+Instead of instant acceleration changes, the system smoothly transitions through seven phases:
+1. Jerk up (acceleration increasing)
+2. Constant acceleration
+3. Jerk down (acceleration decreasing to zero)
+4. Cruise (zero acceleration)
+5. Jerk down (negative, starting deceleration)
+6. Constant deceleration
+7. Jerk up (deceleration decreasing to zero)
+
+**Benefits of S-curves:**
+- Reduced mechanical vibration
+- Lower acoustic noise
+- Less wear on components
+- Better suited for high-speed applications
+
+**Trade-off:** S-curves take longer to complete the same motion (need time for jerk ramps).
+
+## Polynomial Trajectories
+
+For precise control of start and end conditions, **polynomial trajectories** offer mathematical elegance.
+
+### Cubic Polynomials
+
+A cubic polynomial has four coefficients, allowing control of four boundary conditions:
+- Position at start
+- Position at end
+- Velocity at start
+- Velocity at end
+
+This is perfect for "rest-to-rest" motion: start stationary, end stationary, with smooth acceleration throughout.
+
+The position follows: **p(t) = a₀ + a₁t + a₂t² + a₃t³**
+
+### Quintic Polynomials
+
+For even smoother motion, quintic (5th degree) polynomials control six conditions:
+- Position, velocity, and acceleration at both start and end
+
+This ensures not just smooth velocity but smooth acceleration—important for vibration-sensitive applications.
+
+### Splines for Complex Paths
+
+When a trajectory must pass through multiple intermediate points (waypoints), polynomial **splines** connect segments smoothly. Each segment is a polynomial, and the segments join with continuous position, velocity, and (optionally) acceleration.
+
+**Cubic splines** are most common, balancing smoothness with computational simplicity.
+
+## Multi-Axis Coordination
+
+Real robots have multiple joints or axes that must move together. A robot arm reaching for an object moves shoulder, elbow, and wrist simultaneously—not sequentially.
+
+### Synchronized Motion
+
+The challenge: different axes travel different distances but should start and end together.
+
+**Solution:** Identify the slowest axis (the one that takes longest at its maximum speed and acceleration), and scale all other axes to match its timing.
+
+For example:
+- Axis 1 needs to move 90° (would take 1.5s alone)
+- Axis 2 needs to move 30° (would take 0.6s alone)
+- Axis 3 needs to move 60° (would take 1.0s alone)
+
+Synchronize all to 1.5s: Axes 2 and 3 move slower than their maximum capability so everyone arrives together.
+
+### Waypoint Blending
+
+Moving through multiple waypoints creates a dilemma: stopping at each point is slow, but cutting corners might miss important positions.
+
+**Blend zones** offer a compromise. Near each waypoint, the trajectory smoothly curves rather than making a sharp corner. The robot doesn't quite reach the waypoint but maintains continuous motion.
+
+**Blend radius** controls the trade-off:
+- Large blend radius: Faster motion, but deviates more from nominal path
+- Small blend radius: Follows path closely, but slower through corners
+- Zero blend radius: Stops at each waypoint
+
+## Trajectory Tracking Control
+
+Planning a trajectory is only half the battle. The robot must actually follow it—and reality introduces errors.
+
+### The Tracking Problem
+
+At each moment, compare:
+- **Desired state**: Where the trajectory says we should be
+- **Actual state**: Where sensors say we actually are
+
+The difference is **tracking error**. The controller's job: minimize this error.
+
+### Feedforward + Feedback Control
+
+The most effective tracking controllers combine two strategies:
+
+**Feedforward**: Use the planned trajectory to anticipate what control effort will be needed. If we know we'll need to accelerate, start applying force before the error develops.
+
+**Feedback**: Measure actual position and velocity, compute errors, and apply corrections. This handles disturbances and model inaccuracies.
+
+The combination:
+- Feedforward does most of the work (based on the plan)
+- Feedback handles what feedforward misses (unexpected deviations)
+
+### PD Control with Feedforward
+
+A common and effective approach:
+
+**Command = Kp × position_error + Kd × velocity_error + feedforward_velocity**
+
+Where:
+- **Kp**: Position gain (drives position error to zero)
+- **Kd**: Velocity gain (damps oscillations)
+- **Feedforward**: Based on desired velocity (anticipates needed effort)
+
+## Constraints and Limits
+
+Real trajectories must respect physical constraints:
+
+### Joint Limits
+- **Position limits**: Joints can only rotate so far
+- **Velocity limits**: Motors have maximum speeds
+- **Acceleration limits**: Drives have limited torque/force
+- **Jerk limits**: Mechanical structures have vibration limits
+
+### Workspace Constraints
+- **Obstacles**: Trajectory must avoid collisions
+- **Reach limits**: End-effector must stay in reachable workspace
+- **Singularities**: Certain configurations cause control problems
+
+### Task Constraints
+- **Orientation constraints**: Keep a cup level while moving it
+- **Speed constraints**: Move slowly near obstacles
+- **Force limits**: Don't crush delicate objects
+
+### Handling Constraints
+
+Simple approach: Plan trajectory conservatively within worst-case limits.
+
+Sophisticated approach: Solve optimization problems that maximize speed while satisfying all constraints. This is computationally intensive but achieves the fastest possible motion.
+
+## Time-Optimal Trajectories
+
+For applications where speed matters, **time-optimal trajectory planning** finds the fastest legal trajectory:
+
+1. Define the path geometry
+2. Compute velocity limits along the path (from joint limits)
+3. Find the maximum velocity at each point that allows stopping safely
+4. Construct the fastest profile that respects all limits
+
+This typically involves numerical optimization and produces irregular profiles tailored to the specific motion.
+
+## Practical Considerations
+
+### Trajectory Generation Rate
+
+How often should you compute trajectory setpoints?
+
+- **Typical servo rate**: 1000 Hz (1ms between updates)
+- **Trajectory interpolation**: Often 10-100 Hz
+- **Motion planning**: Can be slower (path changes less often)
+
+Higher rates give smoother motion but require more computation.
+
+### Dealing with Delays
+
+Real systems have communication and computation delays. By the time a command executes, the robot has moved.
+
+**Solutions:**
+- Predict ahead by the delay time
+- Send trajectory previews, not just current setpoints
+- Close the control loop faster than delays can accumulate
+
+### Emergency Stops
+
+Safety requires the ability to stop quickly. But stopping "instantly" violates all our smoothness principles.
+
+**Solution:** Plan emergency deceleration profiles that stop as fast as possible within safe limits. The stopping distance determines how close to obstacles you can operate.
+
+## Key Takeaways
+
+1. **Trajectories specify position over time**, not just the geometric path.
+
+2. **Smooth acceleration is essential**: Trapezoidal and S-curve profiles prevent mechanical stress.
+
+3. **Polynomial trajectories** enable precise boundary condition control for smooth start/stop behavior.
+
+4. **Multi-axis motion requires synchronization**: All axes should start and end together.
+
+5. **Waypoint blending** enables continuous motion through intermediate points.
+
+6. **Feedforward + feedback** provides the best tracking performance.
+
+7. **Constraints must be respected**: Physical limits on position, velocity, acceleration, and jerk.
+
+:::note Real-World Complexity
+Industrial robots use sophisticated trajectory generators handling:
+- 6+ degrees of freedom with complex kinematics
+- Real-time constraint satisfaction
+- Dynamic obstacle avoidance
+- Force/torque limiting
+- Coordinated multi-robot motion
+
+The principles remain the same; the implementation becomes much more intricate.
+:::
+
+---
+
+**Next Chapter**: [Robot Kinematics](/week-03/module-02/robot-kinematics) — We explore the mathematics connecting joint angles to end-effector positions, enabling us to plan trajectories in task space rather than joint space.

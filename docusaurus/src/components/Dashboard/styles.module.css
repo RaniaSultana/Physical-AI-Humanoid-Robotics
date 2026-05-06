@@ -1,0 +1,278 @@
+/**
+ * Styles for Dashboard components.
+ */
+
+/* DueCards Card */
+.dueCardsCard {
+  padding: 1.5rem;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.dueCardsHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.dueCardsIcon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ifm-color-primary-lightest);
+  border-radius: 12px;
+  color: var(--ifm-color-primary);
+}
+
+[data-theme='dark'] .dueCardsIcon {
+  background: rgba(var(--ifm-color-primary-rgb), 0.2);
+}
+
+.dueCardsTitle {
+  flex: 1;
+}
+
+.dueCardsTitle h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.dueCardsTitle p {
+  margin: 0;
+  color: var(--ifm-color-content-secondary);
+  font-size: 0.9rem;
+}
+
+.streakBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: linear-gradient(135deg, #ff6b6b, #feca57);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+}
+
+.streakIcon {
+  font-size: 1rem;
+}
+
+/* Stats Row */
+.dueCardsStats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 8px;
+}
+
+.stat {
+  flex: 1;
+  text-align: center;
+}
+
+.statValue {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ifm-color-primary);
+}
+
+.statLabel {
+  font-size: 0.8rem;
+  color: var(--ifm-color-content-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Deck List */
+.deckList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.deckItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.deckItem:hover {
+  background: var(--ifm-color-emphasis-200);
+  border-color: var(--ifm-color-primary-light);
+}
+
+.deckTitle {
+  font-weight: 500;
+  color: var(--ifm-color-content);
+}
+
+.deckCount {
+  font-size: 0.85rem;
+  color: var(--ifm-color-content-secondary);
+  background: var(--ifm-color-emphasis-200);
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+}
+
+.moreDecks {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ifm-color-content-secondary);
+  padding: 0.5rem;
+}
+
+/* Start Review Button */
+.startReviewButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  background: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.startReviewButton:hover {
+  background: var(--ifm-color-primary-dark);
+  transform: translateY(-1px);
+}
+
+.startReviewButton:active {
+  transform: translateY(0);
+}
+
+.lastReview {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+/* Compact Badge */
+.dueCardsBadge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ifm-color-content);
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.dueCardsBadge:hover {
+  background: var(--ifm-color-emphasis-200);
+}
+
+.badgeCount {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: var(--ifm-color-primary);
+  color: white;
+  border-radius: 9px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Empty State */
+.dueCardsEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 12px;
+  color: var(--ifm-color-content-secondary);
+}
+
+.dueCardsEmpty svg {
+  margin-bottom: 1rem;
+  color: var(--ifm-color-success);
+}
+
+.dueCardsEmpty p {
+  margin: 0;
+}
+
+.streak {
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, #ff6b6b, #feca57);
+  border-radius: 12px;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Loading State */
+.dueCardsLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--ifm-color-emphasis-300);
+  border-top-color: var(--ifm-color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .dueCardsStats {
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    flex: 1 0 30%;
+  }
+}

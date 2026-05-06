@@ -1,0 +1,271 @@
+---
+sidebar_position: 1
+title: Humanoid Manipulation
+description: Grasping, dexterous manipulation, and whole-body manipulation for humanoid robots
+---
+
+# Humanoid Manipulation
+
+Humanoid robots with arms and hands can manipulate objects in human environments, using the same tools and interfaces designed for human hands. This chapter covers grasping, dexterous manipulation, and whole-body control for manipulation tasks, which together enable humanoids to interact meaningfully with the physical world.
+
+## Grasping Fundamentals
+
+### Why Grasping Matters
+
+The ability to grasp objects is fundamental to useful robot behavior. A humanoid that can walk but cannot pick things up has limited practical value. Grasping enables:
+
+- Moving objects from place to place
+- Using tools designed for human hands
+- Interacting with switches, handles, and controls
+- Assembling and manufacturing products
+- Caring for people and environments
+
+### Grasp Taxonomy
+
+Human grasping research has identified distinct grasp types that form the basis for robotic grasping strategies:
+
+| Category | Grasp Type | Contact Pattern | Use Cases |
+|----------|------------|-----------------|-----------|
+| **Power** | Cylindrical | Palm + all fingers wrap | Bottles, tools, handles |
+| **Power** | Spherical | Palm + fingers surround | Balls, round objects |
+| **Power** | Hook | Fingers curl, no palm | Bags, rings, handles |
+| **Precision** | Pinch | Thumb + index fingertips | Small items, needles |
+| **Precision** | Lateral | Thumb against index side | Keys, cards, thin objects |
+| **Precision** | Tripod | Thumb + two fingertips | Pens, small tools |
+
+**Power grasps** maximize grip force by using the palm and wrapping fingers around the object. They're strong but offer limited dexterity for in-hand manipulation.
+
+**Precision grasps** use only fingertips, enabling fine manipulation and control but with less total grip force.
+
+The choice of grasp depends on object size, shape, weight, and the manipulation task that follows grasping.
+
+### Grasp Quality Metrics
+
+Not all grasps are equally good. Several metrics quantify grasp quality:
+
+**Force Closure**: A grasp has force closure if it can resist arbitrary external forces and torques on the object. This requires contacts that span the space of possible disturbances.
+
+**Grasp Wrench Space**: The set of all forces and torques (wrenches) that the grasp can apply to the object. Larger wrench spaces indicate more versatile grasps.
+
+**Stability Margin**: How far the grasp is from losing contact or slipping. Larger margins indicate more robust grasps.
+
+**Ferrari-Canny Metric**: The radius of the largest ball that fits inside the grasp wrench space. A widely used single-number quality measure.
+
+:::tip Practical Grasp Quality
+While theoretical metrics matter, practical grasp quality also depends on:
+- Tolerance to object pose uncertainty
+- Robustness to surface variation (smooth vs. rough)
+- Ease of approach (collision-free path exists)
+- Suitability for the subsequent manipulation task
+:::
+
+## Grasp Planning
+
+### Analytical Grasp Synthesis
+
+Classical grasp planning uses geometric analysis to find good grasp configurations:
+
+**Antipodal Grasps**: Two contact points where surface normals point toward each other through the object center. With sufficient friction, antipodal grasps achieve force closure.
+
+**Form Closure**: Three or more contacts that geometrically prevent any object motion. Form closure grasps work even without friction.
+
+**Contact Point Selection**: Search object surface for contact point combinations that maximize grasp quality metrics.
+
+The analytical approach requires accurate object models and works best for simple geometries.
+
+### Data-Driven Grasp Detection
+
+Modern approaches learn to predict grasps directly from sensor data:
+
+| Method | Input | Output | Key Advantage |
+|--------|-------|--------|---------------|
+| **GG-CNN** | Depth image | Grasp quality + angle per pixel | Real-time, pixel-level |
+| **Dex-Net** | Depth + grasp candidate | Success probability | Large training database |
+| **Contact-GraspNet** | Point cloud | 6-DoF grasps with contacts | Contact-aware |
+| **AnyGrasp** | Point cloud | Dense grasp poses | Fast, general |
+
+These methods train on large datasets of grasps (often millions) either from simulation, human annotation, or real robot trials. The trained networks can predict grasps for novel objects not seen during training.
+
+**Zero-Shot Generalization**: A key advantage of learned grasp detection is handling objects never seen during training. The network learns general principles of graspability rather than memorizing specific objects.
+
+### Vision-Language Grasp Planning
+
+Foundation models enable new approaches to grasp planning:
+
+**Language-Conditioned Grasping**: "Pick up the red mug" - the system must identify which object matches the description and plan an appropriate grasp.
+
+**Affordance Understanding**: Models can reason about how objects should be grasped based on their function ("grab the knife by the handle, not the blade").
+
+**Common Sense Reasoning**: Understanding that fragile objects need gentle grasps, heavy objects need power grasps, etc.
+
+## Dexterous Manipulation
+
+### Multi-Finger Hand Control
+
+Robot hands with multiple articulated fingers can perform dexterous manipulation that parallel grippers cannot:
+
+| Capability | Requirements | Degrees of Freedom |
+|------------|--------------|-------------------|
+| **Power grasp** | Palm + finger wrap | 6-10 DoF |
+| **Precision grasp** | Independent fingertips | 12-15 DoF |
+| **In-hand manipulation** | Coordinated finger motion | 15-20+ DoF |
+| **Tool use** | Stable grasp + wrist motion | 20+ DoF |
+
+The human hand has roughly 20 degrees of freedom (depending on counting method). Robot hands range from simple 2-DoF grippers to complex 24+ DoF anthropomorphic designs.
+
+### Underactuated vs. Fully Actuated Hands
+
+Hand design involves fundamental trade-offs:
+
+**Fully Actuated**: Each joint has its own motor. Maximum control authority but complex, heavy, and expensive.
+
+**Underactuated**: Fewer motors than joints, with mechanical coupling (tendons, linkages). Simpler, lighter, more robust, but less control authority.
+
+**Adaptive Grasp**: Underactuated hands often naturally adapt to object shapes through their mechanical design, requiring less sensing and control.
+
+:::note Tendon-Driven Hands
+Many robot hands use tendons (cables) routed from motors in the forearm to joints in the fingers. This moves mass away from the hand for faster finger motion, but introduces complexities like tendon stretch and friction.
+:::
+
+### In-Hand Manipulation
+
+In-hand manipulation repositions objects within the hand without regrasping:
+
+**Finger Gaiting**: Sequentially release and regrasp with different fingers while others maintain the object. Enables large rotations through many small steps.
+
+**Pivoting**: Rotate the object around a finger contact point. Good for small rotations around a single axis.
+
+**Rolling**: Roll the object between fingers using coordinated finger motion. Enables continuous rotation.
+
+**Sliding**: Slide the object along finger surfaces by controlling friction forces. Good for small translations.
+
+In-hand manipulation remains one of the most challenging problems in robotics. It requires:
+- Accurate tactile sensing
+- Precise force control
+- Slip detection and prevention
+- Real-time planning of finger motions
+
+Current systems can perform basic in-hand manipulation for simple objects, but human-level dexterity remains elusive.
+
+## Whole-Body Manipulation
+
+### Beyond Arm Reach
+
+Humanoid robots have a significant advantage over fixed manipulators: they can move their entire body to extend manipulation capabilities.
+
+**Arms Only**: Typical reach of 60-80 cm from shoulder. Limited workspace.
+
+**Arms + Torso**: Bending and rotating the torso extends reach by 30-50 cm and enables access to more orientations.
+
+**Arms + Torso + Stepping**: Unlimited reach within the environment. Can reposition to access any location.
+
+### Coordinated Control
+
+Whole-body manipulation requires coordinating many degrees of freedom simultaneously:
+
+**Task Priority**: Primary task (e.g., hand position) takes priority. Secondary tasks (e.g., balance, posture) use remaining freedom.
+
+**Constraint Satisfaction**: Maintain balance (CoM over support), respect joint limits, avoid collisions.
+
+**Null-Space Motion**: Use redundant DoF for secondary objectives without affecting the primary task.
+
+For example, when reaching for an object on a high shelf:
+1. Position the hand at the target (primary task)
+2. Maintain balance (critical constraint)
+3. Extend reach using torso lean (secondary objective)
+4. Keep comfortable joint positions (tertiary objective)
+
+### Mobile Manipulation
+
+Combining locomotion and manipulation opens new capabilities but also introduces challenges:
+
+| Challenge | Description | Approach |
+|-----------|-------------|----------|
+| **Stability during manipulation** | Forces on object affect balance | Whole-body control, stance adjustment |
+| **Coordination** | Walking and manipulating simultaneously | Hierarchical control, decoupled planning |
+| **Dynamic manipulation** | Manipulating while moving | Predictive control, robust grasps |
+| **Object transport** | Carrying objects affects gait | Modified locomotion, rebalancing |
+
+## Learning-Based Manipulation
+
+### Imitation Learning
+
+Learning manipulation from demonstrations can be more efficient than pure reinforcement learning:
+
+**Behavior Cloning**: Supervised learning on state-action pairs from demonstrations. Simple but suffers from compounding errors.
+
+**DAgger**: Interactive imitation that queries the expert when the policy encounters novel states. Handles distribution shift.
+
+**Inverse Reinforcement Learning**: Infer the reward function from demonstrations, then optimize a policy. More generalizable but computationally expensive.
+
+### Demonstration Collection Methods
+
+| Method | Advantages | Disadvantages |
+|--------|------------|---------------|
+| **Kinesthetic teaching** | Direct robot control, accurate | Slow, requires physical access |
+| **Teleoperation** | Natural motion, safe for operators | Embodiment gap, hardware needed |
+| **Video demonstration** | Abundant data available | No action labels, viewpoint issues |
+| **VR/AR interfaces** | Intuitive, scalable | Equipment cost, mapping to robot |
+
+### Diffusion Policy
+
+Diffusion policies are a recent breakthrough in learning manipulation:
+
+**Key Idea**: Model the action distribution as a denoising diffusion process. Start from noise and iteratively denoise to produce actions.
+
+**Multi-Modal Actions**: Unlike Gaussian policies, diffusion can represent complex multi-modal action distributions (multiple valid ways to do a task).
+
+**Temporal Consistency**: Diffusion over action sequences produces smooth, coherent motions.
+
+**State-of-the-Art Results**: Diffusion policies have achieved strong results on manipulation benchmarks, handling complex bimanual and long-horizon tasks.
+
+## Tactile Sensing for Manipulation
+
+### Why Touch Matters
+
+Vision alone is insufficient for many manipulation tasks:
+
+- **Occluded regions**: Can't see contact points during grasp
+- **Force information**: Vision doesn't reveal contact forces
+- **Slip detection**: Critical for maintaining grasp
+- **Texture/compliance**: Material properties affect manipulation
+
+### Tactile Sensor Technologies
+
+| Technology | Resolution | Sensitivity | Form Factor | Examples |
+|------------|------------|-------------|-------------|----------|
+| **Resistive arrays** | Medium | Good | Flat | FSR arrays |
+| **Capacitive** | High | Excellent | Flexible | Pressure mats |
+| **Camera-based** | Very high | Excellent | Fingertip | GelSight, DIGIT |
+| **BioTac** | Medium | Excellent | Fingertip | SynTouch |
+
+**Camera-based tactile sensors** (like GelSight) use an internal camera to image deformation of a soft gel surface. They provide rich information about contact geometry, force distribution, and slip.
+
+### Tactile-Guided Manipulation
+
+Tactile feedback enables:
+
+**Grasp Adjustment**: Detect and correct grasp problems before object drops.
+
+**Slip Prevention**: Increase grip force when slip is detected.
+
+**Insertion Tasks**: Feel the way into tight fits that vision can't resolve.
+
+**Material Identification**: Distinguish objects by texture and compliance.
+
+**Contact-Rich Tasks**: Wiping, polishing, assembly require force feedback.
+
+## Key Takeaways
+
+- **Grasping fundamentals** include grasp taxonomy (power vs. precision) and quality metrics
+- **Grasp planning** uses analytical methods for known objects and learned methods for generalization
+- **Dexterous manipulation** with multi-finger hands enables in-hand object repositioning
+- **Whole-body manipulation** coordinates arms, torso, and legs for extended reach and capability
+- **Learning-based approaches** including imitation learning and diffusion policies achieve state-of-the-art results
+- **Tactile sensing** provides critical force and contact information that vision cannot
+
+Manipulation is where humanoid capability meets practical usefulness. Progress in grasping, dexterous manipulation, and whole-body coordination will determine how quickly humanoids can contribute to real-world tasks.
+
+---
+
+**Next Chapter**: [Human-Robot Interaction](./human-robot-interaction)

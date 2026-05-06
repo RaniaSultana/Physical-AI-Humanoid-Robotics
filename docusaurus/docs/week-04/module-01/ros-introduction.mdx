@@ -1,0 +1,285 @@
+---
+sidebar_position: 1
+title: Introduction to ROS
+description: Getting started with Robot Operating System for robotics development
+---
+
+# Introduction to ROS
+
+The Robot Operating System (ROS) isn't actually an operating system—it's a flexible framework for writing robot software. ROS provides tools, libraries, and conventions that simplify creating complex robot behaviors across a wide variety of robotic platforms. Since its creation at Stanford and Willow Garage in the late 2000s, ROS has become the de facto standard for robotics research and increasingly for commercial applications.
+
+## What is ROS?
+
+ROS is **middleware**—software that sits between the operating system and your application code. It provides:
+
+- **Communication infrastructure**: Standardized message passing between processes
+- **Hardware abstraction**: Common interfaces for sensors and actuators
+- **Device drivers**: Ready-to-use drivers for cameras, LiDARs, motors, and more
+- **Visualization tools**: See what your robot sees in 3D
+- **Package management**: Share and reuse code across projects and teams
+- **Simulation integration**: Test code in simulation before hardware
+
+:::tip Why ROS?
+Without ROS, every robotics project reinvents fundamental infrastructure. ROS lets you focus on your unique problem—navigation, manipulation, perception—while reusing solutions for common challenges like message passing and coordinate transforms.
+:::
+
+## Core ROS Concepts
+
+### Nodes
+
+A **node** is a process that performs computation. A typical robot system comprises many nodes, each handling a specific function:
+
+- Camera driver node: Captures images
+- Object detector node: Processes images to find objects
+- Motion planner node: Plans collision-free paths
+- Motor controller node: Sends commands to actuators
+
+Nodes are intentionally modular. Each does one thing well, and they communicate through well-defined interfaces. This makes systems easier to develop, test, and maintain.
+
+### Topics: Publish/Subscribe Communication
+
+**Topics** are named channels for message passing. Nodes can:
+- **Publish** messages to a topic (sending data)
+- **Subscribe** to a topic (receiving data)
+
+This is **asynchronous, many-to-many** communication:
+- Multiple publishers can send to the same topic
+- Multiple subscribers can receive from the same topic
+- Publishers and subscribers don't know about each other
+
+**Example:** A camera publishes images to `/camera/image`. Both a display node and an object detection node subscribe to that topic. The camera doesn't need to know who's listening.
+
+### Services: Request/Response Communication
+
+**Services** provide synchronous **request/response** communication—like calling a function:
+
+1. Client sends a request
+2. Server processes the request
+3. Server sends back a response
+4. Client receives the response
+
+Services are useful for:
+- Getting current robot state ("Where are you?")
+- Triggering actions ("Take a picture")
+- Configuration changes ("Set speed limit to 1.0 m/s")
+
+Unlike topics, services are one-to-one and block until completed.
+
+### Messages: Structured Data
+
+**Messages** define the structure of data passed through topics and services. ROS provides standard message types for common robotics data:
+
+| Package | Message Types | Use Cases |
+|---------|--------------|-----------|
+| **std_msgs** | Int32, Float64, String, Bool | Simple primitive data |
+| **geometry_msgs** | Pose, Twist, Transform | Positions, velocities, transforms |
+| **sensor_msgs** | Image, LaserScan, Imu, PointCloud2 | Sensor data |
+| **nav_msgs** | Odometry, Path, OccupancyGrid | Navigation data |
+
+You can also define custom messages for application-specific data.
+
+### Parameters: Runtime Configuration
+
+**Parameters** store configuration values that nodes read at startup or during operation:
+- Maximum velocity
+- Camera frame rate
+- Algorithm thresholds
+
+Parameters allow tuning without recompiling code, and different configurations can be loaded for different scenarios.
+
+### The ROS Master (ROS 1)
+
+In ROS 1, the **ROS Master** is a central registry that nodes use to find each other. When a node starts, it registers with the master. When a node wants to communicate, it asks the master where to find the other node, then establishes a direct connection.
+
+:::note ROS 2 Difference
+ROS 2 eliminates the central master, using DDS (Data Distribution Service) for decentralized discovery. This improves reliability—no single point of failure.
+:::
+
+## ROS 1 vs ROS 2
+
+ROS has evolved significantly. Here's how the versions compare:
+
+| Feature | ROS 1 | ROS 2 |
+|---------|-------|-------|
+| **Communication** | Custom protocols (TCPROS) | DDS (industry standard) |
+| **Real-time** | Limited support | First-class support |
+| **Security** | None built-in | Encryption, authentication |
+| **Platform** | Primarily Linux | Linux, Windows, macOS, embedded |
+| **Python** | Python 2 and 3 | Python 3 only |
+| **Node lifecycle** | Manual management | Managed nodes with states |
+| **Quality of Service** | Limited | Configurable reliability, latency |
+
+**When to use which:**
+- **ROS 1**: Legacy systems, extensive package ecosystem, educational resources
+- **ROS 2**: New projects, commercial deployment, real-time requirements, multi-platform
+
+## The ROS Ecosystem
+
+### Packages
+
+ROS organizes code into **packages**—the basic unit of organization. A package might contain:
+- Node executables
+- Libraries
+- Configuration files
+- Launch files
+- Message/service definitions
+
+The ROS ecosystem has thousands of packages for perception, planning, control, and more.
+
+### Workspaces
+
+A **workspace** is a folder containing packages you're developing. The build system compiles packages in your workspace, and the environment setup lets you use them.
+
+### Build Systems
+
+- **catkin** (ROS 1): Based on CMake
+- **colcon** (ROS 2): More flexible, handles multiple build types
+
+### Launch Files
+
+**Launch files** start multiple nodes with configuration in one command. Instead of opening many terminals and typing many commands, one launch file sets up the entire system.
+
+ROS 1 uses XML launch files. ROS 2 uses Python launch files, enabling programmatic logic.
+
+## Essential ROS Tools
+
+### Command Line Tools
+
+ROS provides powerful command-line tools:
+
+**Node inspection:**
+- `ros2 node list`: See all running nodes
+- `ros2 node info NODE_NAME`: Details about a specific node
+
+**Topic inspection:**
+- `ros2 topic list`: See all active topics
+- `ros2 topic echo TOPIC_NAME`: Print messages in real-time
+- `ros2 topic hz TOPIC_NAME`: Measure message rate
+- `ros2 topic pub TOPIC_NAME`: Manually publish messages
+
+**Service interaction:**
+- `ros2 service list`: See available services
+- `ros2 service call SERVICE_NAME`: Call a service
+
+**Parameter access:**
+- `ros2 param list NODE_NAME`: See node's parameters
+- `ros2 param get/set`: Read/write parameters
+
+### RViz: 3D Visualization
+
+**RViz** (ROS Visualization) displays robot data in 3D:
+- Robot model from URDF description
+- Sensor data (LiDAR, cameras, point clouds)
+- TF transforms (coordinate frame relationships)
+- Planned paths and trajectories
+- Custom markers and visualizations
+
+RViz is indispensable for debugging—you can literally see what your robot perceives.
+
+### rqt: GUI Tools
+
+**rqt** provides graphical tools:
+- **rqt_graph**: Visualize node/topic connections
+- **rqt_plot**: Plot numerical data over time
+- **rqt_console**: View and filter log messages
+- **rqt_image_view**: Display camera images
+
+### Gazebo: Simulation
+
+**Gazebo** is a physics-based simulator that integrates with ROS:
+- Simulate robots in realistic 3D environments
+- Model sensors with realistic noise
+- Test algorithms before hardware deployment
+- Safe experimentation with dangerous scenarios
+
+## The TF Library: Coordinate Transforms
+
+One of ROS's most valuable features is **TF (Transform)**: a library for tracking coordinate frames.
+
+### The Transform Problem
+
+A robot has many coordinate frames:
+- World frame (fixed)
+- Robot base frame (moves with robot)
+- Sensor frames (camera, LiDAR, each have their own)
+- Object frames (where detected objects are)
+
+When a camera sees an object 2 meters ahead, that's "2 meters in camera frame." To navigate there, you need "position in world frame." TF handles these conversions.
+
+### TF Tree
+
+TF maintains a **tree** of transforms, continuously updated:
+- World → Robot base
+- Robot base → Camera
+- Robot base → LiDAR
+- Robot base → Arm base → Link 1 → Link 2 → ... → Gripper
+
+You can ask TF: "Where is the gripper in world coordinates?" It chains together all the transforms automatically.
+
+### Why TF Matters
+
+Without TF, you'd manually track and multiply transformation matrices everywhere. TF handles:
+- Time-varying transforms (robot moves)
+- Transform interpolation (sensor data from 0.1 seconds ago)
+- Tree structure (complex kinematic chains)
+- Broadcasting and listening (distributed system)
+
+## URDF: Robot Description
+
+The **Unified Robot Description Format (URDF)** is an XML format describing robot structure:
+- Links (rigid bodies)
+- Joints (connections between links)
+- Visual geometry (what it looks like)
+- Collision geometry (for planning)
+- Physical properties (mass, inertia)
+
+A URDF file lets RViz display your robot, Gazebo simulate it, and MoveIt plan motions for it—all from one description.
+
+## Building a ROS System
+
+### Typical Architecture
+
+A navigation robot might have:
+- **Sensor drivers**: Camera, LiDAR, IMU nodes
+- **Perception**: Object detection, SLAM
+- **Planning**: Path planning, motion planning
+- **Control**: Velocity controller, motor drivers
+- **Coordination**: State machine, behavior tree
+
+Each subsystem is one or more nodes communicating through topics and services.
+
+### Design Principles
+
+**Modularity**: Each node does one thing well. Easier to test, debug, and replace.
+
+**Abstraction**: Nodes communicate through interfaces (topics/services), not implementation details. You can swap LiDAR sensors without changing planning code.
+
+**Configuration**: Parameters and launch files enable reconfiguration without code changes.
+
+**Introspection**: The tooling lets you inspect the running system—see what's happening, debug problems.
+
+## Key Takeaways
+
+1. **ROS is middleware**: It provides communication and tools, not an operating system.
+
+2. **Nodes are modular processes**: Each handles a specific function, communicating through defined interfaces.
+
+3. **Topics enable publish/subscribe**: Asynchronous, many-to-many communication for data streams.
+
+4. **Services provide request/response**: Synchronous communication for commands and queries.
+
+5. **TF manages coordinate transforms**: Essential for relating sensor data to world coordinates.
+
+6. **URDF describes robot structure**: One format for visualization, simulation, and planning.
+
+7. **The ecosystem is vast**: Thousands of packages solve common robotics problems.
+
+8. **ROS 2 is the future**: Modern features for commercial and real-time applications.
+
+:::tip Getting Started
+The best way to learn ROS is hands-on. Start with the official tutorials using TurtleBot simulation or the "turtle" demo. See messages flowing, visualize data in RViz, and build intuition for the publish/subscribe model.
+:::
+
+---
+
+**Next Chapter**: [Machine Learning for Robotics](/week-05/module-01/ml-for-robotics) — We explore how machine learning enables robots to learn from data rather than explicit programming, transforming perception, planning, and control.

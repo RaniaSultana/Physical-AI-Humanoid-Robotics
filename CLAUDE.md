@@ -208,3 +208,9 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
+
+## Active Technologies
+- Python 3.11+ (backend), TypeScript/JavaScript (frontend/Docusaurus) (001-ai-textbook-platform)
+
+## Recent Changes
+- 001-ai-textbook-platform: Added Python 3.11+ (backend), TypeScript/JavaScript (frontend/Docusaurus)

@@ -1,0 +1,583 @@
+openapi: 3.0.3
+info:
+  title: AI Textbook Platform - Personalization API
+  version: 1.0.0
+  description: |
+    Translation and content personalization endpoints for the AI-Native Interactive Textbook Platform.
+    Implements FR-014, FR-015, FR-016, FR-017.
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: translation
+    description: Chapter translation operations
+  - name: personalization
+    description: Chapter personalization operations
+
+paths:
+  /translate/{chapter_id}:
+    get:
+      tags: [translation]
+      summary: Get chapter translation
+      description: Get existing Urdu translation for a chapter (FR-017)
+      operationId: getTranslation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: language
+          in: query
+          schema:
+            type: string
+            default: ur
+          description: Target language (currently only 'ur' supported)
+      responses:
+        '200':
+          description: Translation found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslatedContent'
+        '401':
+          description: Authentication required (FR-013)
+        '404':
+          description: Translation not found
+
+    post:
+      tags: [translation]
+      summary: Generate chapter translation
+      description: |
+        Generate Urdu translation for a chapter (FR-014).
+        Preserves document structure, formatting, and technical terminology (FR-015).
+        Returns immediately with job ID for long chapters.
+      operationId: translateChapter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranslateRequest'
+      responses:
+        '200':
+          description: Translation complete (short chapters)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslatedContent'
+        '202':
+          description: Translation started (long chapters)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslationJob'
+        '401':
+          description: Authentication required
+        '404':
+          description: Chapter not found
+        '409':
+          description: Translation already exists
+
+  /translate/{chapter_id}/stream:
+    post:
+      tags: [translation]
+      summary: Stream chapter translation
+      description: Generate translation with real-time progress streaming
+      operationId: translateChapterStream
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Streaming translation
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/TranslationStreamEvent'
+        '401':
+          description: Authentication required
+        '404':
+          description: Chapter not found
+
+  /translate/jobs/{job_id}:
+    get:
+      tags: [translation]
+      summary: Get translation job status
+      description: Check status of long-running translation job
+      operationId: getTranslationJobStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslationJob'
+        '401':
+          description: Authentication required
+        '404':
+          description: Job not found
+
+  /personalize/{chapter_id}:
+    get:
+      tags: [personalization]
+      summary: List user's personalized versions
+      description: Get all personalized versions of a chapter for the user (FR-017)
+      operationId: listPersonalizations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of personalized versions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalizationList'
+        '401':
+          description: Authentication required
+
+    post:
+      tags: [personalization]
+      summary: Generate personalized chapter
+      description: |
+        Generate a personalized version of a chapter based on user's interests and background (FR-016).
+        Adapts depth, examples, and emphasis to the user's specified interests.
+      operationId: personalizeChapter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalizeRequest'
+      responses:
+        '200':
+          description: Personalization complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalizedContent'
+        '202':
+          description: Personalization started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalizationJob'
+        '401':
+          description: Authentication required
+        '404':
+          description: Chapter not found
+
+  /personalize/{chapter_id}/stream:
+    post:
+      tags: [personalization]
+      summary: Stream personalized chapter generation
+      description: Generate personalization with real-time progress streaming
+      operationId: personalizeChapterStream
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalizeRequest'
+      responses:
+        '200':
+          description: Streaming personalization
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/PersonalizationStreamEvent'
+        '401':
+          description: Authentication required
+        '404':
+          description: Chapter not found
+
+  /personalize/{chapter_id}/{personalization_id}:
+    get:
+      tags: [personalization]
+      summary: Get specific personalized version
+      description: Get a specific personalized version by ID
+      operationId: getPersonalization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: personalization_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Personalized content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalizedContent'
+        '401':
+          description: Authentication required
+        '404':
+          description: Personalization not found
+
+    delete:
+      tags: [personalization]
+      summary: Delete personalized version
+      description: Delete a specific personalized version
+      operationId: deletePersonalization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: personalization_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Personalization deleted
+        '401':
+          description: Authentication required
+        '404':
+          description: Personalization not found
+
+  /personalize/jobs/{job_id}:
+    get:
+      tags: [personalization]
+      summary: Get personalization job status
+      description: Check status of long-running personalization job
+      operationId: getPersonalizationJobStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalizationJob'
+        '401':
+          description: Authentication required
+        '404':
+          description: Job not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TranslateRequest:
+      type: object
+      properties:
+        language:
+          type: string
+          default: ur
+          description: Target language (currently only 'ur' supported)
+        force:
+          type: boolean
+          default: false
+          description: Regenerate even if translation exists
+
+    TranslatedContent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        chapter_id:
+          type: string
+          format: uuid
+        language:
+          type: string
+        content_markdown:
+          type: string
+          description: Translated MDX content
+        model_used:
+          type: string
+        generation_time_seconds:
+          type: number
+          format: float
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TranslationJob:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        chapter_id:
+          type: string
+          format: uuid
+        language:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        progress:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Progress from 0 to 1
+        sections_completed:
+          type: integer
+        sections_total:
+          type: integer
+        error_message:
+          type: string
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    TranslationStreamEvent:
+      type: object
+      properties:
+        event:
+          type: string
+          enum: [progress, section_complete, done, error]
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/ProgressData'
+            - $ref: '#/components/schemas/SectionData'
+            - $ref: '#/components/schemas/CompletionData'
+            - $ref: '#/components/schemas/ErrorData'
+
+    PersonalizeRequest:
+      type: object
+      required:
+        - interests
+      properties:
+        interests:
+          type: string
+          minLength: 10
+          maxLength: 1000
+          description: |
+            User's specific interests for personalization.
+            Example: "I'm interested in agricultural robotics applications"
+          example: "I'm interested in agricultural robotics applications and autonomous navigation"
+        depth:
+          type: string
+          enum: [beginner, intermediate, advanced]
+          description: Desired depth of explanation (uses user background if not specified)
+
+    PersonalizedContent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        chapter_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        interests:
+          type: string
+          description: Interests used for this personalization
+        background_snapshot:
+          type: object
+          description: User's background at generation time
+          properties:
+            background_type:
+              type: string
+            software_experience:
+              type: string
+            hardware_experience:
+              type: string
+        content_markdown:
+          type: string
+          description: Personalized MDX content
+        model_used:
+          type: string
+        generation_time_seconds:
+          type: number
+          format: float
+        created_at:
+          type: string
+          format: date-time
+
+    PersonalizationList:
+      type: object
+      properties:
+        personalizations:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              interests:
+                type: string
+              created_at:
+                type: string
+                format: date-time
+
+    PersonalizationJob:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        chapter_id:
+          type: string
+          format: uuid
+        interests:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        progress:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        error_message:
+          type: string
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    PersonalizationStreamEvent:
+      type: object
+      properties:
+        event:
+          type: string
+          enum: [progress, content_chunk, done, error]
+        data:
+          type: string
+
+    ProgressData:
+      type: object
+      properties:
+        progress:
+          type: number
+          format: float
+        message:
+          type: string
+
+    SectionData:
+      type: object
+      properties:
+        section_index:
+          type: integer
+        section_title:
+          type: string
+        content:
+          type: string
+
+    CompletionData:
+      type: object
+      properties:
+        content_id:
+          type: string
+          format: uuid
+        total_time_seconds:
+          type: number
+          format: float
+
+    ErrorData:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

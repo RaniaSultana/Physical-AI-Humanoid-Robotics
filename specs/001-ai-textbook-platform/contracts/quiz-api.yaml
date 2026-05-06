@@ -1,0 +1,700 @@
+openapi: 3.0.3
+info:
+  title: AI Textbook Platform - Quiz API
+  version: 1.0.0
+  description: |
+    AI-generated quiz and assessment endpoints for the AI-Native Interactive Textbook Platform.
+    Implements FR-027 to FR-034 (Quiz generation, attempts, scoring, explanations).
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: quizzes
+    description: Quiz generation and management
+  - name: attempts
+    description: Quiz attempt tracking and scoring
+
+paths:
+  /chapters/{chapter_id}/quiz:
+    get:
+      tags: [quizzes]
+      summary: Get existing quiz for chapter
+      description: Get previously generated quiz for a chapter (FR-030)
+      operationId: getChapterQuiz
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Quiz found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quiz'
+        '401':
+          description: Authentication required
+        '404':
+          description: Quiz not found for this chapter
+
+    post:
+      tags: [quizzes]
+      summary: Generate quiz for chapter
+      description: |
+        Generate AI-powered quiz questions from chapter content (FR-027).
+        Supports multiple question types: MCQ, True/False (FR-028).
+        Generates 5-10 questions per chapter by default.
+      operationId: generateChapterQuiz
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuizGenerationRequest'
+      responses:
+        '200':
+          description: Quiz generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quiz'
+        '202':
+          description: Quiz generation started (long chapters)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizGenerationJob'
+        '401':
+          description: Authentication required
+        '404':
+          description: Chapter not found
+        '409':
+          description: Quiz already exists (use force=true to regenerate)
+
+  /chapters/{chapter_id}/quiz/stream:
+    post:
+      tags: [quizzes]
+      summary: Stream quiz generation
+      description: Generate quiz with real-time progress streaming
+      operationId: generateChapterQuizStream
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuizGenerationRequest'
+      responses:
+        '200':
+          description: Streaming quiz generation
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/QuizStreamEvent'
+        '401':
+          description: Authentication required
+        '404':
+          description: Chapter not found
+
+  /quizzes/{quiz_id}:
+    get:
+      tags: [quizzes]
+      summary: Get quiz by ID
+      description: Get a specific quiz with all questions
+      operationId: getQuiz
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: quiz_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Quiz details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quiz'
+        '401':
+          description: Authentication required
+        '404':
+          description: Quiz not found
+
+  /quizzes/{quiz_id}/attempts:
+    get:
+      tags: [attempts]
+      summary: List user's attempts for a quiz
+      description: Get all attempts by the current user for this quiz
+      operationId: listQuizAttempts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: quiz_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of attempts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttemptList'
+        '401':
+          description: Authentication required
+        '404':
+          description: Quiz not found
+
+    post:
+      tags: [attempts]
+      summary: Start a quiz attempt
+      description: Begin a new quiz attempt (FR-031)
+      operationId: startQuizAttempt
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: quiz_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Attempt started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizAttempt'
+        '401':
+          description: Authentication required
+        '404':
+          description: Quiz not found
+
+  /quizzes/{quiz_id}/attempts/{attempt_id}:
+    get:
+      tags: [attempts]
+      summary: Get attempt details
+      description: Get details of a specific quiz attempt including answers
+      operationId: getQuizAttempt
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: quiz_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: attempt_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Attempt details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizAttemptDetail'
+        '401':
+          description: Authentication required
+        '404':
+          description: Attempt not found
+
+  /quizzes/{quiz_id}/attempts/{attempt_id}/answer:
+    post:
+      tags: [attempts]
+      summary: Submit answer for a question
+      description: Submit answer for a single question during an attempt
+      operationId: submitAnswer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: quiz_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: attempt_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnswerSubmission'
+      responses:
+        '200':
+          description: Answer recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnswerResult'
+        '400':
+          description: Invalid answer or attempt already completed
+        '401':
+          description: Authentication required
+        '404':
+          description: Attempt or question not found
+
+  /quizzes/{quiz_id}/attempts/{attempt_id}/submit:
+    post:
+      tags: [attempts]
+      summary: Submit quiz attempt
+      description: |
+        Submit all answers and complete the quiz attempt (FR-032).
+        Returns score and explanations for incorrect answers (FR-033, FR-034).
+      operationId: submitQuizAttempt
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: quiz_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: attempt_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttemptSubmission'
+      responses:
+        '200':
+          description: Quiz completed with results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizResult'
+        '400':
+          description: Attempt already completed or missing answers
+        '401':
+          description: Authentication required
+        '404':
+          description: Attempt not found
+
+  /users/me/quiz-history:
+    get:
+      tags: [attempts]
+      summary: Get user's quiz history
+      description: Get all quiz attempts for the current user
+      operationId: getUserQuizHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: User's quiz history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizHistory'
+        '401':
+          description: Authentication required
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    QuizGenerationRequest:
+      type: object
+      properties:
+        question_count:
+          type: integer
+          minimum: 3
+          maximum: 20
+          default: 7
+          description: Number of questions to generate
+        question_types:
+          type: array
+          items:
+            type: string
+            enum: [mcq, true_false]
+          default: [mcq, true_false]
+          description: Types of questions to include
+        difficulty:
+          type: string
+          enum: [easy, medium, hard, mixed]
+          default: mixed
+          description: Overall difficulty level
+        force:
+          type: boolean
+          default: false
+          description: Regenerate even if quiz exists
+
+    Quiz:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        chapter_id:
+          type: string
+          format: uuid
+        chapter_title:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuizQuestion'
+        question_count:
+          type: integer
+        difficulty:
+          type: string
+          enum: [easy, medium, hard, mixed]
+        model_used:
+          type: string
+        generation_time_seconds:
+          type: number
+          format: float
+        created_at:
+          type: string
+          format: date-time
+
+    QuizQuestion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        question_type:
+          type: string
+          enum: [mcq, true_false]
+        question_text:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionOption'
+          description: Options for MCQ (4 options) or True/False (2 options)
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        order:
+          type: integer
+          description: Question order in the quiz
+
+    QuestionOption:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        is_correct:
+          type: boolean
+          description: Only returned in results, not during quiz taking
+
+    QuizGenerationJob:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        chapter_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        progress:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        questions_generated:
+          type: integer
+        questions_total:
+          type: integer
+        error_message:
+          type: string
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    QuizStreamEvent:
+      type: object
+      properties:
+        event:
+          type: string
+          enum: [progress, question_generated, done, error]
+        data:
+          type: object
+
+    QuizAttempt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        quiz_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [in_progress, completed, abandoned]
+        started_at:
+          type: string
+          format: date-time
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuizQuestion'
+          description: Questions without correct answers marked
+
+    QuizAttemptDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        quiz_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [in_progress, completed, abandoned]
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecordedAnswer'
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    RecordedAnswer:
+      type: object
+      properties:
+        question_id:
+          type: string
+          format: uuid
+        selected_option_id:
+          type: string
+        answered_at:
+          type: string
+          format: date-time
+
+    AnswerSubmission:
+      type: object
+      required:
+        - question_id
+        - selected_option_id
+      properties:
+        question_id:
+          type: string
+          format: uuid
+        selected_option_id:
+          type: string
+
+    AnswerResult:
+      type: object
+      properties:
+        question_id:
+          type: string
+          format: uuid
+        recorded:
+          type: boolean
+        answers_remaining:
+          type: integer
+
+    AttemptSubmission:
+      type: object
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnswerSubmission'
+          description: Optional - submit remaining answers with completion
+
+    AttemptList:
+      type: object
+      properties:
+        attempts:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              status:
+                type: string
+                enum: [in_progress, completed, abandoned]
+              score:
+                type: number
+                format: float
+                nullable: true
+              started_at:
+                type: string
+                format: date-time
+              completed_at:
+                type: string
+                format: date-time
+                nullable: true
+
+    QuizResult:
+      type: object
+      properties:
+        attempt_id:
+          type: string
+          format: uuid
+        quiz_id:
+          type: string
+          format: uuid
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Score as percentage
+        correct_count:
+          type: integer
+        total_count:
+          type: integer
+        time_taken_seconds:
+          type: integer
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionResult'
+        completed_at:
+          type: string
+          format: date-time
+
+    QuestionResult:
+      type: object
+      properties:
+        question_id:
+          type: string
+          format: uuid
+        question_text:
+          type: string
+        question_type:
+          type: string
+          enum: [mcq, true_false]
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionOption'
+        selected_option_id:
+          type: string
+        correct_option_id:
+          type: string
+        is_correct:
+          type: boolean
+        explanation:
+          type: string
+          description: AI-generated explanation for the correct answer (FR-034)
+
+    QuizHistory:
+      type: object
+      properties:
+        total_attempts:
+          type: integer
+        average_score:
+          type: number
+          format: float
+        attempts:
+          type: array
+          items:
+            type: object
+            properties:
+              attempt_id:
+                type: string
+                format: uuid
+              quiz_id:
+                type: string
+                format: uuid
+              chapter_title:
+                type: string
+              score:
+                type: number
+                format: float
+              completed_at:
+                type: string
+                format: date-time
+        pagination:
+          type: object
+          properties:
+            limit:
+              type: integer
+            offset:
+              type: integer
+            total:
+              type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

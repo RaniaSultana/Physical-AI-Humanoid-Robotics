@@ -1,0 +1,310 @@
+openapi: 3.0.3
+info:
+  title: AI Textbook Platform - Authentication API
+  version: 1.0.0
+  description: |
+    Authentication and user management endpoints for the AI-Native Interactive Textbook Platform.
+    Implements FR-010, FR-011, FR-012, FR-013.
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: auth
+    description: Authentication operations
+  - name: users
+    description: User profile operations
+
+paths:
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Register a new user
+      description: Create a new user account with email and password (FR-010)
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Log in user
+      description: Authenticate user with email and password
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Log out user
+      description: Invalidate current session
+      operationId: logoutUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+        '401':
+          description: Not authenticated
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Get current user
+      description: Get authenticated user's profile
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated
+
+  /users/profile:
+    patch:
+      tags: [users]
+      summary: Update user profile
+      description: Update display name and preferences
+      operationId: updateProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input
+        '401':
+          description: Not authenticated
+
+  /users/background:
+    put:
+      tags: [users]
+      summary: Set educational background
+      description: Set or update user's educational background for personalization (FR-012)
+      operationId: setBackground
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetBackgroundRequest'
+      responses:
+        '200':
+          description: Background updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid background type
+        '401':
+          description: Not authenticated
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: student@university.edu
+        password:
+          type: string
+          minLength: 8
+          example: securePassword123
+        display_name:
+          type: string
+          maxLength: 100
+          example: John Doe
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: bearer
+        expires_in:
+          type: integer
+          example: 3600
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+        background_type:
+          $ref: '#/components/schemas/BackgroundType'
+        background_other:
+          type: string
+          nullable: true
+        software_experience:
+          $ref: '#/components/schemas/ExperienceLevel'
+        hardware_experience:
+          $ref: '#/components/schemas/ExperienceLevel'
+        learning_goals:
+          type: string
+          nullable: true
+        preferred_language:
+          type: string
+          enum: [en, ur]
+        role:
+          type: string
+          enum: [student, author]
+        created_at:
+          type: string
+          format: date-time
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          maxLength: 100
+        preferred_language:
+          type: string
+          enum: [en, ur]
+
+    SetBackgroundRequest:
+      type: object
+      required:
+        - background_type
+      properties:
+        background_type:
+          $ref: '#/components/schemas/BackgroundType'
+        background_other:
+          type: string
+          description: Required when background_type is 'other'
+        software_experience:
+          $ref: '#/components/schemas/ExperienceLevel'
+        hardware_experience:
+          $ref: '#/components/schemas/ExperienceLevel'
+        learning_goals:
+          type: string
+          maxLength: 1000
+
+    BackgroundType:
+      type: string
+      enum:
+        - cs_student
+        - me_student
+        - ee_student
+        - hobbyist
+        - professional
+        - other
+      description: |
+        Predefined educational backgrounds:
+        - cs_student: Computer Science Student
+        - me_student: Mechanical Engineering Student
+        - ee_student: Electrical Engineering Student
+        - hobbyist: Robotics Hobbyist
+        - professional: Industry Professional
+        - other: Other (specify in background_other)
+
+    ExperienceLevel:
+      type: string
+      enum:
+        - none
+        - beginner
+        - intermediate
+        - advanced
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
