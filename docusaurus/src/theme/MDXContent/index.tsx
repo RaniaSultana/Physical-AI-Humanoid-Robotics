@@ -57,7 +57,7 @@ function useChapterInfo(): { slug: string; title: string } | null {
 
   // Handle homepage
   if (path === '/' || path === '') {
-    return { slug: 'home', title: 'Physical AI & Humanoid Robotics' };
+    return { slug: '/', title: 'Physical AI & Humanoid Robotics' };
   }
 
   // Handle chapter pages (week-XX paths)
